@@ -1,0 +1,12 @@
+# A-Maze-ing configuration file
+WIDTH=25
+HEIGHT=19
+ENTRY=0,0
+EXIT=24,18
+OUTPUT_FILE=maze.txt
+PERFECT=True
+# SEED=42
+
+# Thème visuel : spring | summer | autumn | winter
+THEME=spring
+ALGORITHM=dfs
