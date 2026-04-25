@@ -98,6 +98,9 @@ def _validate_config(config: Dict[str, Any]) -> None:
     if not _is_valid_position(exit_pos, width, height):
         raise ValueError(f"EXIT {exit_pos} invalide pour dimensions {width}x{height}")
 
+    if entry == exit_pos:
+        raise ValueError("ENTRY et EXIT doivent être différents")
+
 def _is_valid_position(pos: Tuple[int, int], width: int, height: int) -> bool:
     """Vérifie si une position est valide dans la grille"""
     x, y = pos

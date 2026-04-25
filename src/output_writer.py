@@ -20,12 +20,9 @@ def write_output(generator, entry: Tuple[int, int], exit_pos: Tuple[int, int], o
         OSError: En cas d'erreur d'écriture
     """
     try:
-        # Calculer le chemin solution
         solver = MazeSolver(generator)
         solution_path = solver.solve(entry, exit_pos)
-
-        # Créer l'écrivain et sauvegarder
-        writer = OutputWriter(generator.grid, solution_path)
+        writer = OutputWriter(generator.grid, entry, exit_pos, solution_path)
         writer.write_to_file(output_file)
 
     except Exception as e:
@@ -41,15 +38,19 @@ class OutputWriter:
     - Ligne vide puis chemin solution en N/E/S/W
     """
 
-    def __init__(self, maze: List[List[int]], solution_path: List[str] = None):
+    def __init__(self, maze: List[List[int]], entry: Tuple[int, int], exit_pos: Tuple[int, int], solution_path: List[str] = None):
         """
         Initialise l'écrivain
 
         Args:
             maze: Grille du labyrinthe (liste de listes d'entiers bitmask)
+            entry: Position d'entrée
+            exit_pos: Position de sortie
             solution_path: Chemin solution en directions (optionnel)
         """
         self.maze = maze
+        self.entry = entry
+        self.exit_pos = exit_pos
         self.solution_path = solution_path or []
 
     def write_to_file(self, filepath: str) -> None:
@@ -67,19 +68,18 @@ class OutputWriter:
         Génère le contenu hexadécimal complet
 
         Returns:
-            Contenu du fichier avec labyrinthe + chemin
+            Contenu du fichier avec labyrinthe + coordonnées + chemin
         """
-        # Générer la grille hexadécimale
         lines = []
         for row in self.maze:
             hex_row = "".join(format(cell, 'X') for cell in row)
             lines.append(hex_row)
 
         content = "\n".join(lines)
+        content += f"\n\n{self.entry[0]},{self.entry[1]}\n{self.exit_pos[0]},{self.exit_pos[1]}\n"
 
-        # Ajouter le chemin solution si disponible
         if self.solution_path:
-            content += f"\n{''.join(self.solution_path)}"
+            content += "".join(self.solution_path) + "\n"
 
         return content
 

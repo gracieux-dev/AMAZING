@@ -7,10 +7,6 @@ Usage:
 """
 
 import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
-sys.path.insert(0, os.path.dirname(__file__))
 
 from src.config_parser import parse_config
 from src.output_writer import write_output

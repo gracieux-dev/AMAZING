@@ -31,7 +31,8 @@ Repository = "https://github.com/42/a-maze-ing.git"
 Issues = "https://github.com/42/a-maze-ing/issues"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["."]
+include = ["mazegen", "mazegen.*", "src", "src.*"]
 
 [tool.mypy]
 python_version = "3.10"

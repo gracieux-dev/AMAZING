@@ -83,22 +83,31 @@ class MazeGenerator:
             self._visited[y][x] = True
 
     def _dfs(self, x: int, y: int) -> None:
-        """Recursive backtracker DFS maze generation."""
+        """Iterative backtracker DFS maze generation."""
         self._visited[y][x] = True
-        dirs = [NORTH, EAST, SOUTH, WEST]
-        self._rng.shuffle(dirs)
-        for direction in dirs:
-            dx, dy = DELTA[direction]
-            nx, ny = x + dx, y + dy
-            if (
-                0 <= nx < self.width
-                and 0 <= ny < self.height
-                and not self._visited[ny][nx]
-                and (nx, ny) not in self.locked
-            ):
-                self.grid[y][x] &= ~direction
-                self.grid[ny][nx] &= ~OPPOSITE[direction]
-                self._dfs(nx, ny)
+        stack = [(x, y)]
+        while stack:
+            cx, cy = stack[-1]
+            dirs = [NORTH, EAST, SOUTH, WEST]
+            self._rng.shuffle(dirs)
+            moved = False
+            for direction in dirs:
+                dx, dy = DELTA[direction]
+                nx, ny = cx + dx, cy + dy
+                if (
+                    0 <= nx < self.width
+                    and 0 <= ny < self.height
+                    and not self._visited[ny][nx]
+                    and (nx, ny) not in self.locked
+                ):
+                    self.grid[cy][cx] &= ~direction
+                    self.grid[ny][nx] &= ~OPPOSITE[direction]
+                    self._visited[ny][nx] = True
+                    stack.append((nx, ny))
+                    moved = True
+                    break
+            if not moved:
+                stack.pop()
 
     def _add_loops(self) -> None:
         """Remove extra walls to create a non-perfect maze with loops."""
