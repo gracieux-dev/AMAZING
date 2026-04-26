@@ -109,6 +109,48 @@ class MazeGenerator:
             if not moved:
                 stack.pop()
 
+    def generate_steps(self):
+        """Iterative DFS that yields (x, y) of each newly carved cell.
+
+        Mirrors generate() exactly, but yields after every wall removal so
+        callers can render intermediate states for animation.
+        """
+        self._init_grid()
+        p42 = Pattern42(self.width, self.height)
+        self.locked = p42.get_cells()
+        self._lock_pattern()
+
+        self._visited[0][0] = True
+        stack = [(0, 0)]
+        yield (0, 0)
+
+        while stack:
+            cx, cy = stack[-1]
+            dirs = [NORTH, EAST, SOUTH, WEST]
+            self._rng.shuffle(dirs)
+            moved = False
+            for direction in dirs:
+                dx, dy = DELTA[direction]
+                nx, ny = cx + dx, cy + dy
+                if (
+                    0 <= nx < self.width
+                    and 0 <= ny < self.height
+                    and not self._visited[ny][nx]
+                    and (nx, ny) not in self.locked
+                ):
+                    self.grid[cy][cx] &= ~direction
+                    self.grid[ny][nx] &= ~OPPOSITE[direction]
+                    self._visited[ny][nx] = True
+                    stack.append((nx, ny))
+                    yield (nx, ny)
+                    moved = True
+                    break
+            if not moved:
+                stack.pop()
+
+        if not self.perfect:
+            self._add_loops()
+
     def _add_loops(self) -> None:
         """Remove extra walls to create a non-perfect maze with loops."""
         removals = (self.width * self.height) // 8
