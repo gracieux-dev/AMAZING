@@ -6,7 +6,7 @@ Visualiseur MLX — A-Maze-ing
 from typing import Tuple, TYPE_CHECKING
 if TYPE_CHECKING:
     from mazegen.generator import MazeGenerator
-
+	
 from mazegen.generator import NORTH, EAST, SOUTH, WEST
 
 # ── tile geometry ──────────────────────────────────────────────────────────────
@@ -92,7 +92,7 @@ class MlxMazeVisualizer:
         self._mlx = Mlx()
         self._ptr = self._mlx.mlx_init()
         self._setup_window()
-
+		# self._mlx.mlx_get_screen_size() to check screen
     # ── window & image setup ───────────────────────────────────────────────────
 
     def _setup_window(self) -> None:
@@ -115,7 +115,7 @@ class MlxMazeVisualizer:
         self._mh    = gh * cell + wall   # maze pixel height (floor only)
         self._win_w = self._mw + _PANEL_W
         self._win_h = max(self._mh + wf + 4, 420)
-
+	
         self._win  = self._mlx.mlx_new_window(self._ptr, self._win_w, self._win_h, 'A-Maze-ing')
         self._img  = self._mlx.mlx_new_image(self._ptr, self._win_w, self._win_h)
         self._data, self._bpp, self._sl, _ = self._mlx.mlx_get_data_addr(self._img)
@@ -403,7 +403,7 @@ class MlxMazeVisualizer:
         if self._animating:
             mlx.mlx_string_put(self._ptr, self._win, ox, 106, ac, 'Generation...')
         else:
-            sol_str = f'{len(sol)} cellules' if self.show_solution else 'masquee'
+            sol_str = f'{len(sol)} cel' if self.show_solution else 'masquee'
             mlx.mlx_string_put(self._ptr, self._win, ox, 106, tc, f'Solution: {sol_str}')
 
         self._hline(self._mw + 8, self._win_w - 8, 122, c['wall_face'])
@@ -420,7 +420,7 @@ class MlxMazeVisualizer:
         self._hline(self._mw + 8, self._win_w - 8, 188, c['wall_face'])
 
         # keyboard shortcuts
-        mlx.mlx_string_put(self._ptr, self._win, ox, 200, ac, '-- Controles --')
+        mlx.mlx_string_put(self._ptr, self._win, ox, 200, ac, '-- Uses --')
         for i, (key, desc) in enumerate(_KEYS):
             yp = 218 + i * 18
             mlx.mlx_string_put(self._ptr, self._win, ox,      yp, ac, key)
@@ -488,7 +488,7 @@ class MlxMazeVisualizer:
         self.show_solution = not self.show_solution
 
     def toggle_colors(self) -> None:
-        pass  # MLX always uses colour
+        pass
 
     def change_theme(self) -> None:
         themes     = list(MLX_THEMES)
