@@ -124,7 +124,7 @@ class MlxMazeVisualizer:
         self._mlx = _MlxLib()
         self._ptr = self._mlx.mlx_init()
         self._setup_window()
-
+		# self._mlx.mlx_get_screen_size() to check screen
     # ── window & image setup ───────────────────────────────────────────────────
 
     def _setup_window(self) -> None:
@@ -155,7 +155,7 @@ class MlxMazeVisualizer:
         self._mh    = gh * cell + wall   # maze pixel height (floor only)
         self._win_w = self._mw + _PANEL_W
         self._win_h = max(self._mh + wf + 4, 420)
-
+	
         self._win  = self._mlx.mlx_new_window(self._ptr, self._win_w, self._win_h, 'A-Maze-ing')
         self._img  = self._mlx.mlx_new_image(self._ptr, self._win_w, self._win_h)
         self._data, self._bpp, self._sl, _ = self._mlx.mlx_get_data_addr(self._img)
