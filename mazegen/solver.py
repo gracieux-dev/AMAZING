@@ -2,10 +2,9 @@
 
 from collections import deque
 from typing import Optional
-from .generator import MazeGenerator, NORTH, EAST, SOUTH, WEST
+from .generator import MazeGenerator, NORTH, EAST, SOUTH, WEST, DELTA
 
 DIRECTION_LETTER = {NORTH: "N", EAST: "E", SOUTH: "S", WEST: "W"}
-DELTA = {NORTH: (0, -1), EAST: (1, 0), SOUTH: (0, 1), WEST: (-1, 0)}
 
 
 class MazeSolver:

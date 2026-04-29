@@ -12,6 +12,7 @@ from src.config_parser import parse_config
 from src.output_writer import write_output
 from src.visualizer import run_interactive
 from mazegen import MazeGenerator
+from mazegen.pattern42 import Pattern42
 
 
 def main() -> None:
@@ -28,12 +29,23 @@ def main() -> None:
         print(f"[Erreur config] {e}", file=sys.stderr)
         sys.exit(1)
 
+    locked = Pattern42(config["WIDTH"], config["HEIGHT"]).get_cells()
+    for label, pos in [("ENTRY", config["ENTRY"]), ("EXIT", config["EXIT"])]:
+        if pos in locked:
+            print(
+                f"[Erreur config] {label} {pos} est sur le pattern '42'. "
+                "Choisissez une autre position.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
     try:
         gen = MazeGenerator(
             width=config["WIDTH"],
             height=config["HEIGHT"],
             seed=config["SEED"],
             perfect=config["PERFECT"],
+            algorithm=config.get("ALGORITHM", "dfs"),
         )
         gen.generate()
     except ValueError as e:

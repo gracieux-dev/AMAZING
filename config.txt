@@ -1,10 +1,10 @@
 # A-Maze-ing configuration file
-WIDTH=20
-HEIGHT=20
+WIDTH=30
+HEIGHT=40
 ENTRY=1,0
-EXIT=15,8
+EXIT=25,20
 OUTPUT_FILE=maze.txt
-PERFECT=True
+PERFECT=NON
 # SEED=42
 
 # Thème visuel : spring | summer | autumn | winter

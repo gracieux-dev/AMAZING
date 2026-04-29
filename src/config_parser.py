@@ -2,10 +2,10 @@
 Parseur de configuration - Lit et valide config.txt
 """
 
-from typing import Dict, Any, Tuple
+from typing import Any
 from pathlib import Path
 
-def parse_config(filepath: str) -> Dict[str, Any]:
+def parse_config(filepath: str) -> dict[str, Any]:
     """
     Parse le fichier de configuration
 
@@ -61,7 +61,8 @@ def parse_config(filepath: str) -> Dict[str, Any]:
         'OUTPUT_FILE': 'maze.txt',
         'PERFECT': True,
         'SEED': 42,
-        'THEME': 'spring'
+        'THEME': 'spring',
+        'ALGORITHM': 'dfs',
     }
 
     # Appliquer les valeurs par défaut
@@ -74,7 +75,7 @@ def parse_config(filepath: str) -> Dict[str, Any]:
 
     return config
 
-def _validate_config(config: Dict[str, Any]) -> None:
+def _validate_config(config: dict[str, Any]) -> None:
     """
     Valide la configuration
 
@@ -101,7 +102,7 @@ def _validate_config(config: Dict[str, Any]) -> None:
     if entry == exit_pos:
         raise ValueError("ENTRY et EXIT doivent être différents")
 
-def _is_valid_position(pos: Tuple[int, int], width: int, height: int) -> bool:
+def _is_valid_position(pos: tuple[int, int], width: int, height: int) -> bool:
     """Vérifie si une position est valide dans la grille"""
     x, y = pos
     return 0 <= x < width and 0 <= y < height
