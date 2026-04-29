@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by gracieux-dev.*
+*This project has been created as part of the 42 curriculum by olchacou, ancourt.*
 
 # A-Maze-ing
 
@@ -72,6 +72,7 @@ The config file uses one `KEY=VALUE` pair per line. Lines starting with `#` are 
 |---|---|---|---|
 | `SEED` | int | random | Random seed for reproducibility |
 | `THEME` | string | `spring` | Visual theme: `spring`, `summer`, `autumn`, `winter` |
+| `DISPLAYMODE` | string | `auto` | Display mode: `auto`, `mlx`, `terminal`, `none` (use `terminal` if MLX is slow or unreliable) |
 
 Example `config.txt`:
 
@@ -84,6 +85,7 @@ EXIT=15,8
 OUTPUT_FILE=maze.txt
 PERFECT=True
 SEED=42
+DISPLAYMODE=auto
 THEME=spring
 ```
 

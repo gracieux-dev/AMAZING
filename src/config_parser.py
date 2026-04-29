@@ -47,28 +47,35 @@ def parse_config(filepath: str) -> dict[str, Any]:
                         config[key] = tuple(map(int, parts))
                     elif key == 'PERFECT':
                         config[key] = value.lower() in ('true', '1', 'yes', 'on')
+                    elif key in ['DISPLAYMODE', 'DISPLAY_MODE']:
+                        mode = value.strip().lower()
+                        if mode in ('default', 'auto', 'detect'):
+                            mode = 'auto'
+                        elif mode in ('terminal', 'text', 'tty'):
+                            mode = 'terminal'
+                        elif mode in ('mlx', 'gui', 'graphical'):
+                            mode = 'mlx'
+                        elif mode in ('none', 'off', 'no'):
+                            mode = 'none'
+                        if mode not in ('auto', 'mlx', 'terminal', 'none'):
+                            raise ValueError(
+                                f"DISPLAYMODE invalide à la ligne {line_num}: {value}"
+                            )
+                        config['DISPLAYMODE'] = mode
                     else:
                         config[key] = value
                 except ValueError as e:
                     raise ValueError(f"Erreur à la ligne {line_num}: {e}")
 
-    # Valeurs par défaut
-    defaults = {
-        'WIDTH': 20,
-        'HEIGHT': 15,
-        'ENTRY': (0, 0),
-        'EXIT': (19, 14),
-        'OUTPUT_FILE': 'maze.txt',
-        'PERFECT': True,
-        'SEED': 42,
-        'THEME': 'spring',
-        'ALGORITHM': 'dfs',
-    }
-
-    # Appliquer les valeurs par défaut
-    for key, default_value in defaults.items():
-        if key not in config:
-            config[key] = default_value
+    required_keys = [
+        'WIDTH', 'HEIGHT', 'ENTRY', 'EXIT', 'OUTPUT_FILE',
+        'PERFECT', 'THEME', 'ALGORITHM',
+    ]
+    missing = [key for key in required_keys if key not in config]
+    if missing:
+        raise ValueError(
+            f"Clé(s) de configuration manquante(s) : {', '.join(missing)}"
+        )
 
     # Validation
     _validate_config(config)
@@ -101,6 +108,18 @@ def _validate_config(config: dict[str, Any]) -> None:
 
     if entry == exit_pos:
         raise ValueError("ENTRY et EXIT doivent être différents")
+
+    if 'SEED' in config:
+        seed = config['SEED']
+        if not isinstance(seed, int) or seed < 0:
+            raise ValueError("SEED doit être un entier positif ou nul")
+
+    if 'DISPLAYMODE' in config:
+        display_mode = config['DISPLAYMODE']
+        if display_mode not in ('auto', 'mlx', 'terminal', 'none'):
+            raise ValueError(
+                "DISPLAYMODE doit être l'un de: auto, mlx, terminal, none"
+            )
 
 def _is_valid_position(pos: tuple[int, int], width: int, height: int) -> bool:
     """Vérifie si une position est valide dans la grille"""

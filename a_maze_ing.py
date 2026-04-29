@@ -43,9 +43,9 @@ def main() -> None:
         gen = MazeGenerator(
             width=config["WIDTH"],
             height=config["HEIGHT"],
-            seed=config["SEED"],
+            seed=config.get("SEED"),
             perfect=config["PERFECT"],
-            algorithm=config.get("ALGORITHM", "dfs"),
+            algorithm=config["ALGORITHM"],
         )
         gen.generate()
     except ValueError as e:
@@ -59,12 +59,18 @@ def main() -> None:
         print(f"[Erreur écriture] {e}", file=sys.stderr)
         sys.exit(1)
 
-    run_interactive(
-        gen,
-        config["ENTRY"],
-        config["EXIT"],
-        theme=config.get("THEME", "spring"),
-    )
+    display_mode = config.get("DISPLAYMODE", "auto")
+    try:
+        run_interactive(
+            gen,
+            config["ENTRY"],
+            config["EXIT"],
+            theme=config["THEME"],
+            display_mode=display_mode,
+        )
+    except RuntimeError as e:
+        print(f"[Erreur affichage] {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

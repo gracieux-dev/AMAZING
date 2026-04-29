@@ -114,6 +114,7 @@ ENTRY=0,0
 EXIT=14,9
 PERFECT=true
 OUTPUT_FILE=test.txt
+DISPLAYMODE=terminal
 THEME=summer"""
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
@@ -130,6 +131,7 @@ THEME=summer"""
             assert config['EXIT'] == (14, 9)
             assert config['PERFECT'] == True
             assert config['OUTPUT_FILE'] == 'test.txt'
+            assert config['DISPLAYMODE'] == 'terminal'
             assert config['THEME'] == 'summer'
 
             print("✓ Config parser réussi")

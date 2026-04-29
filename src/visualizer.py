@@ -3,6 +3,8 @@ Visualiseur MLX — A-Maze-ing
 2.5D Animal Crossing style : tuiles de sol texturées + murs en pierre.
 """
 
+import os
+import sys
 import random as _rnd
 from typing import Tuple
 
@@ -90,10 +92,38 @@ def run_interactive(
     entry: Tuple[int, int],
     exit_pos: Tuple[int, int],
     theme: str = 'spring',
+    display_mode: str = 'auto',
 ) -> None:
-    if _HAS_MLX:
+    display_mode = display_mode.strip().lower()
+    if display_mode == 'none':
+        return
+
+    if display_mode == 'terminal':
+        from .terminal_visualizer import run_interactive as _term
+        _term(generator, entry, exit_pos, theme)
+        return
+
+    if display_mode == 'mlx':
+        if not _HAS_MLX:
+            raise RuntimeError(
+                "DISPLAYMODE=mlx demandé, mais le module mlx n'est pas disponible"
+            )
         MlxMazeVisualizer(generator, entry, exit_pos, theme).run()
-    else:
+        return
+
+    # auto fallback behavior
+    if not _HAS_MLX or not os.getenv('DISPLAY'):
+        from .terminal_visualizer import run_interactive as _term
+        _term(generator, entry, exit_pos, theme)
+        return
+
+    try:
+        MlxMazeVisualizer(generator, entry, exit_pos, theme).run()
+    except Exception as e:
+        print(
+            f"[Info affichage] MLX échoue ({e}); bascule vers le terminal.",
+            file=sys.stderr,
+        )
         from .terminal_visualizer import run_interactive as _term
         _term(generator, entry, exit_pos, theme)
 
@@ -152,7 +182,7 @@ class MlxMazeVisualizer:
         self._wf    = wf
         self._wall  = wall
         self._mw    = gw * cell + wall   # maze pixel width
-        self._mh    = gh * cell + wall   # maze pixel height (floor only)
+        self._mh    = gh * cell + wall 
         self._win_w = self._mw + _PANEL_W
         self._win_h = max(self._mh + wf + 4, 420)
 	
@@ -241,6 +271,7 @@ class MlxMazeVisualizer:
         if not (0 <= x < self._win_w and 0 <= y < self._win_h):
             return
         off = y * self._sl + x * self._bpp8
+        # print(f"Putting pixel at ({x}, {y}) with color {color:06X} at offset {off}")  # --- IGNORE ---
         self._data[off:off + self._bpp8] = self._px(color)
 
     def _hline(self, x0: int, x1: int, y: int, color: int) -> None:
@@ -272,6 +303,7 @@ class MlxMazeVisualizer:
         base = x0 * bpp8
         for yy in range(y0, y1):
             off = yy * sl + base
+            # print(f"Drawing rect row at y={yy}, offset {off}, length {rlen}")  # --- IGNORE ---
             data[off:off + rlen] = row
 
     def _circle(self, cx: int, cy: int, r: int, color: int) -> None:
@@ -358,8 +390,8 @@ class MlxMazeVisualizer:
         pc     = c['path']
         halo   = self._dim(pc, 0.38)
         half   = cw // 2
-        trail  = max(3, cw // 3)   # half-width of the trail segment
-        node_r = max(2, cw // 5)   # radius of the node circle
+        trail  = max(3, cw // 3)
+        node_r = max(2, cw // 5)
 
         # thick connecting segment between each pair of adjacent cells
         for i in range(len(sol) - 1):
@@ -415,7 +447,7 @@ class MlxMazeVisualizer:
         cell = self._cell
         wall = self._wall
         cw   = cell - wall
-
+        
         # ── background & side panel ───────────────────────────────────────
         self._rect(0, 0, self._win_w, self._win_h, c['bg'])
         self._rect(self._mw, 0, _PANEL_W, self._win_h, c['panel'])
@@ -451,7 +483,7 @@ class MlxMazeVisualizer:
         if sol:
             self._draw_path(sol, cw, c)
 
-        # ── entry / exit — clean diamond markers ──────────────────────────
+        # ── entry / exit — clean diamond markers 
         for pos, color in [(self.entry, c['entry']), (self.exit, c['exit'])]:
             px, py = self._cell_px(*pos)
             cx, cy = px + cw // 2, py + cw // 2
@@ -459,7 +491,7 @@ class MlxMazeVisualizer:
             self._diamond(cx, cy, max(2, cw // 3),     color)
             self._circle(cx, cy, max(1, cw // 8), self._blend(color, 0xFFFFFF, 0.6))
 
-        # ── walls ─────────────────────────────────────────────────────────
+        # ── walls 
         for y in range(gh):
             for x in range(gw):
                 cv = grid[y][x]
@@ -473,15 +505,16 @@ class MlxMazeVisualizer:
         self._wall_h(0,               self._mh - wall, self._mw)
         self._wall_v(self._mw - wall, 0,               self._mh)
 
-        # ── corner posts at every grid junction ───────────────────────────
+        # ── corner posts at every grid junction 
         for gy in range(gh + 1):
             for gx in range(gw + 1):
                 cpx = gx * cell
                 cpy = gy * cell
                 self._rect(cpx, cpy,        wall, wall,     c['wall_top'])
                 self._rect(cpx, cpy + wall, wall, self._wf, c['wall_face'])
-
-        # ── flush to window, then draw panel text on top ──────────────────
+                
+        self._mlx.mlx_clear_window(self._ptr, self._win)
+        # ── flush to window, then draw panel text on top
         self._mlx.mlx_put_image_to_window(self._ptr, self._win, self._img, 0, 0)
         self._draw_panel(gw, gh, sol, c)
 
@@ -534,7 +567,7 @@ class MlxMazeVisualizer:
         y += 22
 
         # ── menu buttons ──────────────────────────────────────────────
-        self._mc_btn(bx, y, bw, bh, '[R]  Regenerate',
+        self._mc_btn(bx, y, bw, bh, '[R]  Regen',
                      _MC_GO, _MC_GO_HI, _MC_GO_SH)
         y += bh + gap
 
@@ -542,10 +575,10 @@ class MlxMazeVisualizer:
             lbl = 'Generating...'
             bf, bhi, bsh = _MC_GO, _MC_GO_HI, _MC_GO_SH
         elif self.show_solution:
-            lbl = f'[S]  Solution: ON  ({len(sol)})'
+            lbl = f'[S]  Sol: ON  ({len(sol)})'
             bf, bhi, bsh = _MC_GO, _MC_GO_HI, _MC_GO_SH
         else:
-            lbl, bf, bhi, bsh = ('[S]  Solution: OFF',
+            lbl, bf, bhi, bsh = ('[S]  Sol: OFF',
                                   _MC_BTN, _MC_BTN_HI, _MC_BTN_SH)
         self._mc_btn(bx, y, bw, bh, lbl, bf, bhi, bsh)
         y += bh + gap
@@ -555,7 +588,7 @@ class MlxMazeVisualizer:
                      _MC_BTN, _MC_BTN_HI, _MC_BTN_SH)
         y += bh + gap
 
-        self._mc_btn(bx, y, bw, bh, '[Ret]  Save & Quit',
+        self._mc_btn(bx, y, bw, bh, '[Ret]  S & Q',
                      _MC_BTN, _MC_BTN_HI, _MC_BTN_SH)
         y += bh + gap
 
