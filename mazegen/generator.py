@@ -68,6 +68,7 @@ class MazeGenerator:
 
     def generate(self) -> None:
         """Generate the maze in-place. Call this before accessing grid."""
+        self._rng = random.Random(self.seed)
         self._init_grid()
         self.locked = Pattern42(self.width, self.height).get_cells()
         self._lock_pattern()
@@ -80,6 +81,7 @@ class MazeGenerator:
 
     def generate_steps(self):
         """Yield (x, y) of each newly carved cell for step-by-step animation."""
+        self._rng = random.Random(self.seed)
         self._init_grid()
         self.locked = Pattern42(self.width, self.height).get_cells()
         self._lock_pattern()
