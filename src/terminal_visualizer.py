@@ -315,8 +315,8 @@ def _main(stdscr: Any, generator: Any, entry: tuple,
         mh_chars = len(maze_ch)
         mw_chars = len(maze_ch[0]) if maze_ch else 0
 
-        # +2 gap between maze and panel; reserve 32 cols for panel
-        panel_x = min(mw_chars + 2, w - 32)
+        # +2 gap between maze and panel; keep the panel at the right edge
+        panel_x = max(mw_chars + 2, w - 32)
         panel_w = w - panel_x - 1
 
         # clamp scroll to valid range

@@ -2,8 +2,9 @@ PYTHON = python3
 CONFIG = config.txt
 
 install:
-	$(PYTHON) -m pip install flake8 mypy build --break-system-packages 2>/dev/null || true
-	$(PYTHON) -m pip install -e . --break-system-packages 2>/dev/null || true
+	$(PYTHON) -m pip install --upgrade pip setuptools wheel
+	$(PYTHON) -m pip install flake8 mypy build
+	$(PYTHON) -m pip install -e .
 
 run:
 	$(PYTHON) a_maze_ing.py $(CONFIG)
