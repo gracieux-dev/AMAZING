@@ -1,8 +1,6 @@
 README.md
 pyproject.toml
 mazegen/__init__.py
-mazegen/algorithms.py
-mazegen/config.py
 mazegen/generator.py
 mazegen/pattern42.py
 mazegen/solver.py
@@ -14,6 +12,7 @@ mazegen.egg-info/top_level.txt
 src/__init__.py
 src/config_parser.py
 src/output_writer.py
+src/terminal_visualizer.py
 src/visualizer.py
 tests/test_config.py
 tests/test_generator.py

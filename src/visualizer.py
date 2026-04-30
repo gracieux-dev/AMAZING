@@ -1,67 +1,67 @@
 """
-Visualiseur MLX — A-Maze-ing
-2.5D Animal Crossing style : tuiles de sol texturées + murs en pierre.
+MLX Visualizer — A-Maze-ing
+2.5D Animal Crossing style: textured floor tiles + stone walls.
 """
 
 import os
 import sys
 import random as _rnd
-from typing import Tuple
+from typing import Any, Optional, Tuple
 
-from mazegen.generator import NORTH, EAST, SOUTH, WEST
+from mazegen.generator import NORTH, WEST
 
 # ── tile geometry ──────────────────────────────────────────────────────────────
-_CELL  = 24   # floor tile size (pixels)
-_WALL  = 4    # wall thickness
-_WFACE = 8    # wall front-face height (depth illusion)
+_CELL = 24   # floor tile size (pixels)
+_WALL = 4    # wall thickness
+_WFACE = 8   # wall front-face height (depth illusion)
 
 # ── colour palettes ────────────────────────────────────────────────────────────
 MLX_THEMES: dict = {
     'spring': {
-        'floor':      0xC8DF90, 'floor_alt':  0xB0C870,
-        'wall_top':   0x4A9A32, 'wall_face':  0x1E5A14,
-        'path':       0xFF6B35, 'entry':      0x50B8FF,
-        'exit':       0xFF5050, 'special':    0xCC80FF,
-        'bg':         0xE8F5D0, 'panel':      0x2A4A2A,
-        'text':       0xDDFFDD, 'accent':     0x88FF44,
+        'floor': 0xC8DF90, 'floor_alt': 0xB0C870,
+        'wall_top': 0x4A9A32, 'wall_face': 0x1E5A14,
+        'path': 0xFF6B35, 'entry': 0x50B8FF,
+        'exit': 0xFF5050, 'special': 0xCC80FF,
+        'bg': 0xE8F5D0, 'panel': 0x2A4A2A,
+        'text': 0xDDFFDD, 'accent': 0x88FF44,
     },
     'summer': {
-        'floor':      0xF0E898, 'floor_alt':  0xD8D070,
-        'wall_top':   0x00A8A8, 'wall_face':  0x005A5A,
-        'path':       0x9055CC, 'entry':      0x3CA0FF,
-        'exit':       0xFF4646, 'special':    0xC070FF,
-        'bg':         0xD8F4F8, 'panel':      0x00363C,
-        'text':       0xCCF8FF, 'accent':     0x00DDFF,
+        'floor': 0xF0E898, 'floor_alt': 0xD8D070,
+        'wall_top': 0x00A8A8, 'wall_face': 0x005A5A,
+        'path': 0x9055CC, 'entry': 0x3CA0FF,
+        'exit': 0xFF4646, 'special': 0xC070FF,
+        'bg': 0xD8F4F8, 'panel': 0x00363C,
+        'text': 0xCCF8FF, 'accent': 0x00DDFF,
     },
     'autumn': {
-        'floor':      0xE8C870, 'floor_alt':  0xC8A850,
-        'wall_top':   0xD05810, 'wall_face':  0x882808,
-        'path':       0x2BC7C9, 'entry':      0x3CA0FF,
-        'exit':       0xFF4646, 'special':    0xB464DC,
-        'bg':         0xFFF0D0, 'panel':      0x4A1800,
-        'text':       0xFFE0C0, 'accent':     0xFF9900,
+        'floor': 0xE8C870, 'floor_alt': 0xC8A850,
+        'wall_top': 0xD05810, 'wall_face': 0x882808,
+        'path': 0x2BC7C9, 'entry': 0x3CA0FF,
+        'exit': 0xFF4646, 'special': 0xB464DC,
+        'bg': 0xFFF0D0, 'panel': 0x4A1800,
+        'text': 0xFFE0C0, 'accent': 0xFF9900,
     },
     'winter': {
-        'floor':      0xD8ECFF, 'floor_alt':  0xBCCEF0,
-        'wall_top':   0xE8F4FF, 'wall_face':  0x7080A0,
-        'path':       0xFFCC00, 'entry':      0x3CA0FF,
-        'exit':       0xFF4646, 'special':    0xE080FF,
-        'bg':         0xDCECFF, 'panel':      0x18243C,
-        'text':       0xCCDDFF, 'accent':     0x88CCFF,
+        'floor': 0xD8ECFF, 'floor_alt': 0xBCCEF0,
+        'wall_top': 0xE8F4FF, 'wall_face': 0x7080A0,
+        'path': 0xFFCC00, 'entry': 0x3CA0FF,
+        'exit': 0xFF4646, 'special': 0xE080FF,
+        'bg': 0xDCECFF, 'panel': 0x18243C,
+        'text': 0xCCDDFF, 'accent': 0x88CCFF,
     },
 }
 
-_PANEL_W         = 250   # right panel width in pixels
+_PANEL_W = 250   # right panel width in pixels
 _STEPS_PER_FRAME = 16    # DFS steps advanced per MLX loop tick
 # Minecraft-style button palette (fixed, independent of theme)
-_MC_BORD    = 0x111111
-_MC_BTN     = 0x4A4A4A
-_MC_BTN_HI  = 0x717171
-_MC_BTN_SH  = 0x1A1A1A
-_MC_GO      = 0x5BA832
-_MC_GO_HI   = 0x78D044
-_MC_GO_SH   = 0x2E6019
-_MC_QUIT    = 0x7A2222
+_MC_BORD = 0x111111
+_MC_BTN = 0x4A4A4A
+_MC_BTN_HI = 0x717171
+_MC_BTN_SH = 0x1A1A1A
+_MC_GO = 0x5BA832
+_MC_GO_HI = 0x78D044
+_MC_GO_SH = 0x2E6019
+_MC_QUIT = 0x7A2222
 _MC_QUIT_HI = 0xA03030
 _MC_QUIT_SH = 0x3A0A0A
 _MC_TXT_DIM = 0x888888
@@ -88,12 +88,13 @@ except ModuleNotFoundError:
 
 
 def run_interactive(
-    generator,
+    generator: Any,
     entry: Tuple[int, int],
     exit_pos: Tuple[int, int],
     theme: str = 'spring',
     display_mode: str = 'auto',
 ) -> None:
+    """Launch the interactive visualizer in the appropriate display mode."""
     display_mode = display_mode.strip().lower()
     if display_mode == 'none':
         return
@@ -106,7 +107,7 @@ def run_interactive(
     if display_mode == 'mlx':
         if not _HAS_MLX:
             raise RuntimeError(
-                "DISPLAYMODE=mlx demandé, mais le module mlx n'est pas disponible"
+                "DISPLAYMODE=mlx requested, but the mlx module is not available"
             )
         MlxMazeVisualizer(generator, entry, exit_pos, theme).run()
         return
@@ -121,7 +122,7 @@ def run_interactive(
         MlxMazeVisualizer(generator, entry, exit_pos, theme).run()
     except Exception as e:
         print(
-            f"[Info affichage] MLX échoue ({e}); bascule vers le terminal.",
+            f"[Display info] MLX failed ({e}); falling back to terminal.",
             file=sys.stderr,
         )
         from .terminal_visualizer import run_interactive as _term
@@ -129,32 +130,34 @@ def run_interactive(
 
 
 class MlxMazeVisualizer:
+    """2.5D Animal Crossing style maze visualizer using the MLX library."""
 
-    def __init__(self, generator, entry, exit_pos, theme: str = 'spring') -> None:
-        self.generator         = generator
-        self.entry             = entry
-        self.exit              = exit_pos
-        self.theme             = theme if theme in MLX_THEMES else 'spring'
-        self.show_solution     = False
-        self._sol_cache: list  = []
-        self._sol_dirty        = True
-        self._p42              = getattr(generator, 'locked', set()) or set()
-        self._tick             = 0
+    def __init__(self, generator: Any, entry: Any, exit_pos: Any,
+                 theme: str = 'spring') -> None:
+        self.generator = generator
+        self.entry = entry
+        self.exit = exit_pos
+        self.theme = theme if theme in MLX_THEMES else 'spring'
+        self.show_solution = False
+        self._sol_cache: list = []
+        self._sol_dirty = True
+        self._p42 = getattr(generator, 'locked', set()) or set()
+        self._tick = 0
         # animation state
-        self._animating        = False
-        self._anim_visited: set | None = None
-        self._anim_pos: tuple | None   = None
-        self._step_iter                = None
+        self._animating = False
+        self._anim_visited: Optional[set] = None
+        self._anim_pos: Optional[tuple] = None
+        self._step_iter: Optional[Any] = None
 
         self._in_menu = True
-        self._splash  = _rnd.choice(_SPLASH_TEXTS)
+        self._splash = _rnd.choice(_SPLASH_TEXTS)
 
         self._px_cache: dict = {}
         self._bpp8 = 4          # bytes-per-pixel; overwritten in _setup_window
         self._mlx = _MlxLib()
         self._ptr = self._mlx.mlx_init()
         self._setup_window()
-		# self._mlx.mlx_get_screen_size() to check screen
+
     # ── window & image setup ───────────────────────────────────────────────────
 
     def _setup_window(self) -> None:
@@ -175,28 +178,29 @@ class MlxMazeVisualizer:
             if gw * cell + _WALL <= _max_w and gh * cell + _WALL + wf <= _max_h:
                 break
             cell -= 1
-            wf    = max(2, _WFACE * cell // _CELL)
+            wf = max(2, _WFACE * cell // _CELL)
         wall = max(2, _WALL * cell // _CELL)
 
-        self._cell  = cell
-        self._wf    = wf
-        self._wall  = wall
-        self._mw    = gw * cell + wall   # maze pixel width
-        self._mh    = gh * cell + wall 
+        self._cell = cell
+        self._wf = wf
+        self._wall = wall
+        self._mw = gw * cell + wall   # maze pixel width
+        self._mh = gh * cell + wall
         self._win_w = self._mw + _PANEL_W
         self._win_h = max(self._mh + wf + 4, 420)
-	
-        self._win  = self._mlx.mlx_new_window(self._ptr, self._win_w, self._win_h, 'A-Maze-ing')
-        self._img  = self._mlx.mlx_new_image(self._ptr, self._win_w, self._win_h)
+
+        self._win = self._mlx.mlx_new_window(
+            self._ptr, self._win_w, self._win_h, 'A-Maze-ing')
+        self._img = self._mlx.mlx_new_image(self._ptr, self._win_w, self._win_h)
         self._data, self._bpp, self._sl, _ = self._mlx.mlx_get_data_addr(self._img)
         self._bpp8 = self._bpp // 8
 
     # ── main menu ──────────────────────────────────────────────────────────────
 
     def _render_menu(self) -> None:
-        c    = self._col()
+        c = self._col()
         tile = self._cell
-        cw   = max(4, tile - self._wall)
+        cw = max(4, tile - self._wall)
 
         # tiled floor background across whole window
         self._rect(0, 0, self._win_w, self._win_h, c['bg'])
@@ -218,16 +222,16 @@ class MlxMazeVisualizer:
                     self._blend(_MC_BORD, 0xFFFFFF, 0.12))
 
         # pre-compute button geometry
-        bw  = pw - 32
-        bh  = 30
-        bx  = px + 16
+        bw = pw - 32
+        bh = 30
+        bx = px + 16
         gap = 8
         btns = [
-            (bx, py + 68,                   '[Enter]  Play',
-             _MC_GO,   _MC_GO_HI,   _MC_GO_SH),
-            (bx, py + 68 + bh + gap,        f'[T]  Theme: {self.theme.capitalize()}',
-             _MC_BTN,  _MC_BTN_HI,  _MC_BTN_SH),
-            (bx, py + 68 + 2 * (bh + gap),  '[Esc]  Quit',
+            (bx, py + 68, '[Enter]  Play',
+             _MC_GO, _MC_GO_HI, _MC_GO_SH),
+            (bx, py + 68 + bh + gap, f'[T]  Theme: {self.theme.capitalize()}',
+             _MC_BTN, _MC_BTN_HI, _MC_BTN_SH),
+            (bx, py + 68 + 2 * (bh + gap), '[Esc]  Quit',
              _MC_QUIT, _MC_QUIT_HI, _MC_QUIT_SH),
         ]
 
@@ -271,7 +275,6 @@ class MlxMazeVisualizer:
         if not (0 <= x < self._win_w and 0 <= y < self._win_h):
             return
         off = y * self._sl + x * self._bpp8
-        # print(f"Putting pixel at ({x}, {y}) with color {color:06X} at offset {off}")  # --- IGNORE ---
         self._data[off:off + self._bpp8] = self._px(color)
 
     def _hline(self, x0: int, x1: int, y: int, color: int) -> None:
@@ -289,21 +292,20 @@ class MlxMazeVisualizer:
         if rw <= 0 or rh <= 0:
             return
         bpp8 = self._bpp8
-        x0   = max(rx, 0)
-        x1   = min(rx + rw, self._win_w)
-        w    = x1 - x0
+        x0 = max(rx, 0)
+        x1 = min(rx + rw, self._win_w)
+        w = x1 - x0
         if w <= 0:
             return
-        y0   = max(ry, 0)
-        y1   = min(ry + rh, self._win_h)
-        row  = self._px(color) * w
+        y0 = max(ry, 0)
+        y1 = min(ry + rh, self._win_h)
+        row = self._px(color) * w
         rlen = w * bpp8
-        sl   = self._sl
+        sl = self._sl
         data = self._data
         base = x0 * bpp8
         for yy in range(y0, y1):
             off = yy * sl + base
-            # print(f"Drawing rect row at y={yy}, offset {off}, length {rlen}")  # --- IGNORE ---
             data[off:off + rlen] = row
 
     def _circle(self, cx: int, cy: int, r: int, color: int) -> None:
@@ -313,6 +315,7 @@ class MlxMazeVisualizer:
             self._hline(cx - hw, cx + hw, cy + dy, color)
 
     def _diamond(self, cx: int, cy: int, r: int, color: int) -> None:
+        """Filled diamond shape centered at (cx, cy) with radius r."""
         for dy in range(-r, r + 1):
             hw = r - abs(dy)
             self._hline(cx - hw, cx + hw, cy + dy, color)
@@ -321,8 +324,8 @@ class MlxMazeVisualizer:
     def _dim(color: int, f: float) -> int:
         """Return color scaled by factor f (0.0 = black, 1.0 = unchanged)."""
         r = int(((color >> 16) & 0xFF) * f)
-        g = int(((color >>  8) & 0xFF) * f)
-        b = int(( color        & 0xFF) * f)
+        g = int(((color >> 8) & 0xFF) * f)
+        b = int((color & 0xFF) * f)
         return (r << 16) | (g << 8) | b
 
     @staticmethod
@@ -330,17 +333,17 @@ class MlxMazeVisualizer:
         """Blend c1 toward c2 by factor t (0.0 = c1, 1.0 = c2)."""
         s = 1.0 - t
         r = int(((c1 >> 16) & 0xFF) * s + ((c2 >> 16) & 0xFF) * t)
-        g = int(((c1 >>  8) & 0xFF) * s + ((c2 >>  8) & 0xFF) * t)
-        b = int(( c1        & 0xFF) * s + ( c2        & 0xFF) * t)
+        g = int(((c1 >> 8) & 0xFF) * s + ((c2 >> 8) & 0xFF) * t)
+        b = int((c1 & 0xFF) * s + (c2 & 0xFF) * t)
         return (r << 16) | (g << 8) | b
 
     # ── floor tile with bevel texture ─────────────────────────────────────────
 
     def _draw_floor_tile(self, px: int, py: int, cw: int, fc: int) -> None:
         """Beveled stone tile: darker border, lighter top-left, darker bottom-right."""
-        border  = self._dim(fc, 0.70)
+        border = self._dim(fc, 0.70)
         lighter = self._blend(fc, 0xFFFFFF, 0.22)
-        shadow  = self._dim(fc, 0.58)
+        shadow = self._dim(fc, 0.58)
         # border frame
         self._rect(px, py, cw, cw, border)
         # main fill
@@ -377,9 +380,10 @@ class MlxMazeVisualizer:
         self._rect(px + self._wall, py, self._wf, length, c['wall_face'])
         if self._wf >= 4:
             score = self._dim(c['wall_face'], 0.55)
-            step  = max(4, self._cell // 4)
+            step = max(4, self._cell // 4)
             for sy in range(0, length, step):
-                self._hline(px + self._wall, px + self._wall + self._wf - 1, py + sy, score)
+                self._hline(
+                    px + self._wall, px + self._wall + self._wf - 1, py + sy, score)
 
     # ── path trail ────────────────────────────────────────────────────────────
 
@@ -387,10 +391,10 @@ class MlxMazeVisualizer:
         """Draw solution as a thick connected trail with node circles at each cell."""
         if not sol:
             return
-        pc     = c['path']
-        halo   = self._dim(pc, 0.38)
-        half   = cw // 2
-        trail  = max(3, cw // 3)
+        pc = c['path']
+        halo = self._dim(pc, 0.38)
+        half = cw // 2
+        trail = max(3, cw // 3)
         node_r = max(2, cw // 5)
 
         # thick connecting segment between each pair of adjacent cells
@@ -406,7 +410,7 @@ class MlxMazeVisualizer:
             sw = abs(cx1 - cx0) + trail
             sh = abs(cy1 - cy0) + trail
             self._rect(sx - 1, sy - 1, sw + 2, sh + 2, halo)
-            self._rect(sx,     sy,     sw,     sh,     pc)
+            self._rect(sx, sy, sw, sh, pc)
 
         # circle node at each cell center (skip entry/exit — they have diamond markers)
         for pos in sol:
@@ -416,14 +420,16 @@ class MlxMazeVisualizer:
             px, py = self._cell_px(x, y)
             cx, cy = px + half, py + half
             self._circle(cx, cy, node_r + 1, halo)
-            self._circle(cx, cy, node_r,     pc)
+            self._circle(cx, cy, node_r, pc)
 
     # ── solution cache ─────────────────────────────────────────────────────────
 
-    def _col(self) -> dict:
+    def _col(self) -> Any:
+        """Return the colour palette for the current theme."""
         return MLX_THEMES.get(self.theme, MLX_THEMES['spring'])
 
     def _get_solution(self) -> list:
+        """Return cached solution coords, recomputing if dirty."""
         if self._sol_dirty:
             from mazegen.solver import MazeSolver
             self._sol_cache = MazeSolver(self.generator).solve_as_coords(
@@ -434,20 +440,22 @@ class MlxMazeVisualizer:
     # ── render ─────────────────────────────────────────────────────────────────
 
     def _cell_px(self, x: int, y: int) -> Tuple[int, int]:
+        """Return the pixel coordinates of the top-left corner of cell (x, y)."""
         w = self._wall
         c = self._cell
         return w + x * c, w + y * c
 
     def _render(self) -> None:
-        c    = self._col()
+        """Redraw the entire maze view and flush to the MLX window."""
+        c = self._col()
         grid = self.generator.grid
-        gh   = len(grid)
-        gw   = len(grid[0]) if gh > 0 else 0
-        sol  = self._get_solution() if self.show_solution else []
+        gh = len(grid)
+        gw = len(grid[0]) if gh > 0 else 0
+        sol = self._get_solution() if self.show_solution else []
         cell = self._cell
         wall = self._wall
-        cw   = cell - wall
-        
+        cw = cell - wall
+
         # ── background & side panel ───────────────────────────────────────
         self._rect(0, 0, self._win_w, self._win_h, c['bg'])
         self._rect(self._mw, 0, _PANEL_W, self._win_h, c['panel'])
@@ -456,7 +464,7 @@ class MlxMazeVisualizer:
         # ── floor tiles with bevel texture ────────────────────────────────
         for y in range(gh):
             for x in range(gw):
-                pos    = (x, y)
+                pos = (x, y)
                 px, py = self._cell_px(x, y)
                 if pos == self.entry:
                     fc = c['entry']
@@ -483,15 +491,15 @@ class MlxMazeVisualizer:
         if sol:
             self._draw_path(sol, cw, c)
 
-        # ── entry / exit — clean diamond markers 
+        # ── entry / exit — clean diamond markers
         for pos, color in [(self.entry, c['entry']), (self.exit, c['exit'])]:
             px, py = self._cell_px(*pos)
             cx, cy = px + cw // 2, py + cw // 2
             self._diamond(cx, cy, max(3, cw // 2 - 1), self._dim(color, 0.35))
-            self._diamond(cx, cy, max(2, cw // 3),     color)
+            self._diamond(cx, cy, max(2, cw // 3), color)
             self._circle(cx, cy, max(1, cw // 8), self._blend(color, 0xFFFFFF, 0.6))
 
-        # ── walls 
+        # ── walls
         for y in range(gh):
             for x in range(gw):
                 cv = grid[y][x]
@@ -502,17 +510,17 @@ class MlxMazeVisualizer:
                     self._wall_v(px - wall, py - wall, cell + wall)
 
         # outer south + east borders (always present)
-        self._wall_h(0,               self._mh - wall, self._mw)
-        self._wall_v(self._mw - wall, 0,               self._mh)
+        self._wall_h(0, self._mh - wall, self._mw)
+        self._wall_v(self._mw - wall, 0, self._mh)
 
-        # ── corner posts at every grid junction 
+        # ── corner posts at every grid junction
         for gy in range(gh + 1):
             for gx in range(gw + 1):
                 cpx = gx * cell
                 cpy = gy * cell
-                self._rect(cpx, cpy,        wall, wall,     c['wall_top'])
+                self._rect(cpx, cpy, wall, wall, c['wall_top'])
                 self._rect(cpx, cpy + wall, wall, self._wf, c['wall_face'])
-                
+
         self._mlx.mlx_clear_window(self._ptr, self._win)
         # ── flush to window, then draw panel text on top
         self._mlx.mlx_put_image_to_window(self._ptr, self._win, self._img, 0, 0)
@@ -537,13 +545,14 @@ class MlxMazeVisualizer:
         self._mc_text(tx, y + (bh - 8) // 2, label)
 
     def _draw_panel(self, gw: int, gh: int, sol: list, c: dict) -> None:
-        px      = self._mw
-        pw      = _PANEL_W
-        bx      = px + 10
-        bw      = pw - 20
-        bh      = 22
-        gap     = 4
-        ac      = c['accent']
+        """Render the right-hand info and control panel."""
+        px = self._mw
+        pw = _PANEL_W
+        bx = px + 10
+        bw = pw - 20
+        bh = 22
+        gap = 4
+        ac = c['accent']
         perfect = getattr(self.generator, 'perfect', True)
 
         # ── title block ───────────────────────────────────────────────
@@ -579,7 +588,7 @@ class MlxMazeVisualizer:
             bf, bhi, bsh = _MC_GO, _MC_GO_HI, _MC_GO_SH
         else:
             lbl, bf, bhi, bsh = ('[S]  Sol: OFF',
-                                  _MC_BTN, _MC_BTN_HI, _MC_BTN_SH)
+                                 _MC_BTN, _MC_BTN_HI, _MC_BTN_SH)
         self._mc_btn(bx, y, bw, bh, lbl, bf, bhi, bsh)
         y += bh + gap
 
@@ -597,22 +606,22 @@ class MlxMazeVisualizer:
         y += bh + 16
 
         # ── legend pills (Entry / Solution / Exit) ────────────────────
-        gap3   = 4
-        lbw    = (bw - gap3 * 2) // 3
-        lbh    = 26
+        gap3 = 4
+        lbw = (bw - gap3 * 2) // 3
+        lbh = 26
         legend = [
             (c['entry'], 'Entry'),
-            (c['path'],  'Solution'),
-            (c['exit'],  'Exit'),
+            (c['path'], 'Solution'),
+            (c['exit'], 'Exit'),
         ]
         for i, (col, lbl) in enumerate(legend):
-            lbx    = bx + i * (lbw + gap3)
+            lbx = bx + i * (lbw + gap3)
             col_hi = self._blend(col, 0xFFFFFF, 0.25)
             col_sh = self._dim(col, 0.55)
-            self._rect(lbx,     y,      lbw,      lbh,      _MC_BORD)
-            self._rect(lbx + 2, y + 2,  lbw - 4,  lbh - 4,  col)
-            self._rect(lbx + 2, y + 2,  lbw - 4,  lbh // 3, col_hi)
-            self._rect(lbx + 2, y + lbh - 4, lbw - 4, 2,    col_sh)
+            self._rect(lbx, y, lbw, lbh, _MC_BORD)
+            self._rect(lbx + 2, y + 2, lbw - 4, lbh - 4, col)
+            self._rect(lbx + 2, y + 2, lbw - 4, lbh // 3, col_hi)
+            self._rect(lbx + 2, y + lbh - 4, lbw - 4, 2, col_sh)
             tx = lbx + max(2, (lbw - len(lbl) * 8) // 2)
             self._mc_text(tx, y + (lbh - 8) // 2, lbl)
 
@@ -623,7 +632,8 @@ class MlxMazeVisualizer:
 
     # ── events ─────────────────────────────────────────────────────────────────
 
-    def _on_key(self, key: int, _) -> int:
+    def _on_key(self, key: int, _: Any) -> int:
+        """Handle keyboard input for both menu and game states."""
         if self._in_menu:
             if key == 65307:    # Esc — quit from menu
                 self._mlx.mlx_loop_exit(self._ptr)
@@ -648,39 +658,44 @@ class MlxMazeVisualizer:
             self.show_solution = not self.show_solution
             self._render()
         elif key == 116:       # t — cycle theme
-            themes     = list(MLX_THEMES)
+            themes = list(MLX_THEMES)
             self.theme = themes[(themes.index(self.theme) + 1) % len(themes)]
             self._render()
         return 0
 
     def _start_anim(self) -> None:
-        self._animating    = True
+        """Initialise animation state and start a new generation iterator."""
+        self._animating = True
         self._anim_visited = {(0, 0)}
-        self._anim_pos     = (0, 0)
-        self._sol_dirty    = True
-        self._step_iter    = self.generator.generate_steps()
+        self._anim_pos = (0, 0)
+        self._sol_dirty = True
+        self._step_iter = self.generator.generate_steps()
 
-    def _anim_frame(self, _) -> int:
+    def _anim_frame(self, _: Any) -> int:
+        """Advance the generation animation by _STEPS_PER_FRAME steps."""
         if self._in_menu:
             return 0
         self._tick = (self._tick + 1) % 3600
-        if self._animating:
+        if (self._animating
+                and self._step_iter is not None
+                and self._anim_visited is not None):
             try:
                 for _ in range(_STEPS_PER_FRAME):
                     pos = next(self._step_iter)
                     self._anim_pos = pos
                     self._anim_visited.add(pos)
             except StopIteration:
-                self._animating    = False
-                self._anim_pos     = None
+                self._animating = False
+                self._anim_pos = None
                 self._anim_visited = None
-                self._step_iter    = None
-                self._sol_dirty    = True
-                self._p42          = getattr(self.generator, 'locked', set()) or set()
+                self._step_iter = None
+                self._sol_dirty = True
+                self._p42 = getattr(self.generator, 'locked', set()) or set()
             self._render()
         return 0
 
     def run(self) -> None:
+        """Start the MLX event loop."""
         self._render_menu()
         self._mlx.mlx_key_hook(self._win, self._on_key, None)
         self._mlx.mlx_hook(self._win, 33, 0,
@@ -690,4 +705,3 @@ class MlxMazeVisualizer:
         self._mlx.mlx_destroy_image(self._ptr, self._img)
         self._mlx.mlx_destroy_window(self._ptr, self._win)
         self._mlx.mlx_release(self._ptr)
-

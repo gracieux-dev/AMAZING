@@ -1,6 +1,4 @@
-"""
-Package mazegen - Générateur de labyrinthes réutilisable
-"""
+"""mazegen package - Reusable maze generator."""
 
 from .generator import MazeGenerator
 from .solver import MazeSolver

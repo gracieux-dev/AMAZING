@@ -1,29 +1,30 @@
 """
-Parseur de configuration - Lit et valide config.txt
+Configuration parser - Reads and validates config.txt
 """
 
 from typing import Any
 from pathlib import Path
 
+
 def parse_config(filepath: str) -> dict[str, Any]:
     """
-    Parse le fichier de configuration
+    Parse the configuration file
 
     Args:
-        filepath: Chemin vers le fichier config.txt
+        filepath: Path to the config.txt file
 
     Returns:
-        Dictionnaire avec les paramètres validés
+        Dictionary with validated parameters
 
     Raises:
-        FileNotFoundError: Si le fichier n'existe pas
-        ValueError: Si la configuration est invalide
+        FileNotFoundError: If the file does not exist
+        ValueError: If the configuration is invalid
     """
-    config = {}
+    config: dict[str, Any] = {}
     path = Path(filepath)
 
     if not path.exists():
-        raise FileNotFoundError(f"Fichier de config non trouvé: {filepath}")
+        raise FileNotFoundError(f"Config file not found: {filepath}")
 
     with open(path, 'r', encoding='utf-8') as f:
         for line_num, line in enumerate(f, 1):
@@ -37,13 +38,13 @@ def parse_config(filepath: str) -> dict[str, Any]:
                 value = value.strip()
 
                 try:
-                    # Conversion des types
+                    # Type conversion
                     if key in ['WIDTH', 'HEIGHT', 'SEED']:
                         config[key] = int(value)
                     elif key in ['ENTRY', 'EXIT']:
                         parts = value.split(',')
                         if len(parts) != 2:
-                            raise ValueError(f"Position invalide à la ligne {line_num}")
+                            raise ValueError(f"Invalid position at line {line_num}")
                         config[key] = tuple(map(int, parts))
                     elif key == 'PERFECT':
                         config[key] = value.lower() in ('true', '1', 'yes', 'on')
@@ -59,13 +60,13 @@ def parse_config(filepath: str) -> dict[str, Any]:
                             mode = 'none'
                         if mode not in ('auto', 'mlx', 'terminal', 'none'):
                             raise ValueError(
-                                f"DISPLAYMODE invalide à la ligne {line_num}: {value}"
+                                f"Invalid DISPLAYMODE at line {line_num}: {value}"
                             )
                         config['DISPLAYMODE'] = mode
                     else:
                         config[key] = value
                 except ValueError as e:
-                    raise ValueError(f"Erreur à la ligne {line_num}: {e}")
+                    raise ValueError(f"Error at line {line_num}: {e}")
 
     required_keys = [
         'WIDTH', 'HEIGHT', 'ENTRY', 'EXIT', 'OUTPUT_FILE',
@@ -74,7 +75,7 @@ def parse_config(filepath: str) -> dict[str, Any]:
     missing = [key for key in required_keys if key not in config]
     if missing:
         raise ValueError(
-            f"Clé(s) de configuration manquante(s) : {', '.join(missing)}"
+            f"Missing configuration key(s): {', '.join(missing)}"
         )
 
     # Validation
@@ -82,15 +83,16 @@ def parse_config(filepath: str) -> dict[str, Any]:
 
     return config
 
+
 def _validate_config(config: dict[str, Any]) -> None:
     """
-    Valide la configuration
+    Validates the configuration
 
     Args:
-        config: Configuration à valider
+        config: Configuration to validate
 
     Raises:
-        ValueError: Si la configuration est invalide
+        ValueError: If the configuration is invalid
     """
     width = config['WIDTH']
     height = config['HEIGHT']
@@ -98,30 +100,31 @@ def _validate_config(config: dict[str, Any]) -> None:
     exit_pos = config['EXIT']
 
     if width <= 0 or height <= 0:
-        raise ValueError("WIDTH et HEIGHT doivent être > 0")
+        raise ValueError("WIDTH and HEIGHT must be > 0")
 
     if not _is_valid_position(entry, width, height):
-        raise ValueError(f"ENTRY {entry} invalide pour dimensions {width}x{height}")
+        raise ValueError(f"ENTRY {entry} invalid for dimensions {width}x{height}")
 
     if not _is_valid_position(exit_pos, width, height):
-        raise ValueError(f"EXIT {exit_pos} invalide pour dimensions {width}x{height}")
+        raise ValueError(f"EXIT {exit_pos} invalid for dimensions {width}x{height}")
 
     if entry == exit_pos:
-        raise ValueError("ENTRY et EXIT doivent être différents")
+        raise ValueError("ENTRY and EXIT must be different")
 
     if 'SEED' in config:
         seed = config['SEED']
         if not isinstance(seed, int) or seed < 0:
-            raise ValueError("SEED doit être un entier positif ou nul")
+            raise ValueError("SEED must be a non-negative integer")
 
     if 'DISPLAYMODE' in config:
         display_mode = config['DISPLAYMODE']
         if display_mode not in ('auto', 'mlx', 'terminal', 'none'):
             raise ValueError(
-                "DISPLAYMODE doit être l'un de: auto, mlx, terminal, none"
+                "DISPLAYMODE must be one of: auto, mlx, terminal, none"
             )
 
+
 def _is_valid_position(pos: tuple[int, int], width: int, height: int) -> bool:
-    """Vérifie si une position est valide dans la grille"""
+    """Checks if a position is valid within the grid"""
     x, y = pos
     return 0 <= x < width and 0 <= y < height

@@ -26,15 +26,15 @@ def main() -> None:
     try:
         config = parse_config(config_path)
     except (FileNotFoundError, ValueError) as e:
-        print(f"[Erreur config] {e}", file=sys.stderr)
+        print(f"[Config error] {e}", file=sys.stderr)
         sys.exit(1)
 
     locked = Pattern42(config["WIDTH"], config["HEIGHT"]).get_cells()
     for label, pos in [("ENTRY", config["ENTRY"]), ("EXIT", config["EXIT"])]:
         if pos in locked:
             print(
-                f"[Erreur config] {label} {pos} est sur le pattern '42'. "
-                "Choisissez une autre position.",
+                f"[Config error] {label} {pos} is on the '42' pattern. "
+                "Please choose another position.",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -49,14 +49,14 @@ def main() -> None:
         )
         gen.generate()
     except ValueError as e:
-        print(f"[Erreur génération] {e}", file=sys.stderr)
+        print(f"[Generation error] {e}", file=sys.stderr)
         sys.exit(1)
 
     try:
         write_output(gen, config["ENTRY"], config["EXIT"], config["OUTPUT_FILE"])
-        print(f"Labyrinthe sauvegardé dans '{config['OUTPUT_FILE']}'.")
+        print(f"Maze saved to '{config['OUTPUT_FILE']}'.")
     except OSError as e:
-        print(f"[Erreur écriture] {e}", file=sys.stderr)
+        print(f"[Write error] {e}", file=sys.stderr)
         sys.exit(1)
 
     display_mode = config.get("DISPLAYMODE", "auto")
@@ -69,7 +69,7 @@ def main() -> None:
             display_mode=display_mode,
         )
     except RuntimeError as e:
-        print(f"[Erreur affichage] {e}", file=sys.stderr)
+        print(f"[Display error] {e}", file=sys.stderr)
         sys.exit(1)
 
 

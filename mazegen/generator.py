@@ -1,21 +1,21 @@
 """Maze generation — DFS (recursive backtracker) and Kruskal's algorithm."""
 
 import random
-from typing import Optional
+from typing import Any, Optional
 from .pattern42 import Pattern42
 
 
 NORTH = 0b0001
-EAST  = 0b0010
+EAST = 0b0010
 SOUTH = 0b0100
-WEST  = 0b1000
+WEST = 0b1000
 
 OPPOSITE = {NORTH: SOUTH, SOUTH: NORTH, EAST: WEST, WEST: EAST}
 DELTA = {
     NORTH: (0, -1),
-    EAST:  (1, 0),
+    EAST: (1, 0),
     SOUTH: (0, 1),
-    WEST:  (-1, 0),
+    WEST: (-1, 0),
 }
 
 _ALGORITHMS = ('dfs', 'kruskal')
@@ -55,10 +55,10 @@ class MazeGenerator:
         if algorithm not in _ALGORITHMS:
             raise ValueError(
                 f"Unknown algorithm '{algorithm}'. Choose from: {_ALGORITHMS}.")
-        self.width     = width
-        self.height    = height
-        self.seed      = seed
-        self.perfect   = perfect
+        self.width = width
+        self.height = height
+        self.seed = seed
+        self.perfect = perfect
         self.algorithm = algorithm
         self.grid: list[list[int]] = []
         self.locked: set[tuple[int, int]] = set()
@@ -79,7 +79,7 @@ class MazeGenerator:
         if not self.perfect:
             self._add_loops()
 
-    def generate_steps(self):
+    def generate_steps(self) -> Any:
         """Yield (x, y) of each newly carved cell for step-by-step animation."""
         self._rng = random.Random(self.seed)
         self._init_grid()
@@ -122,7 +122,7 @@ class MazeGenerator:
             x = self._rng.randint(0, self.width - 2)
             y = self._rng.randint(0, self.height - 2)
             if (x, y) not in self.locked and (x + 1, y) not in self.locked:
-                self.grid[y][x]     &= ~EAST
+                self.grid[y][x] &= ~EAST
                 self.grid[y][x + 1] &= ~WEST
 
     # ── DFS ───────────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ class MazeGenerator:
             if not moved:
                 stack.pop()
 
-    def _dfs_steps(self):
+    def _dfs_steps(self) -> Any:
         self._visited[0][0] = True
         stack = [(0, 0)]
         yield (0, 0)
@@ -184,7 +184,7 @@ class MazeGenerator:
 
     # ── Kruskal ───────────────────────────────────────────────────────────────
 
-    def _kruskal_setup(self):
+    def _kruskal_setup(self) -> Any:
         """Build the Union-Find structure and shuffled edge list."""
         parent = {
             (x, y): (x, y)
@@ -192,13 +192,13 @@ class MazeGenerator:
             for x in range(self.width)
         }
 
-        def find(c):
+        def find(c: Any) -> Any:
             while parent[c] != c:
                 parent[c] = parent[parent[c]]
                 c = parent[c]
             return c
 
-        def union(a, b) -> bool:
+        def union(a: Any, b: Any) -> bool:
             ra, rb = find(a), find(b)
             if ra == rb:
                 return False
@@ -224,7 +224,7 @@ class MazeGenerator:
                 self.grid[y1][x1] &= ~direction
                 self.grid[y2][x2] &= ~OPPOSITE[direction]
 
-    def _kruskal_steps(self):
+    def _kruskal_steps(self) -> Any:
         union, edges = self._kruskal_setup()
         for (x1, y1), (x2, y2), direction in edges:
             if union((x1, y1), (x2, y2)):

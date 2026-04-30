@@ -7,10 +7,11 @@ import tempfile
 import os
 from src.mazegen.config import Config
 
+
 class TestConfig(unittest.TestCase):
     """Tests pour Config"""
 
-    def test_from_file(self):
+    def test_from_file(self) -> None:
         """Test de chargement depuis fichier"""
         config_content = """WIDTH=15
 HEIGHT=10
@@ -36,6 +37,7 @@ SEED=123
                 self.assertEqual(config.seed, 123)
             finally:
                 os.unlink(f.name)
+
 
 if __name__ == '__main__':
     unittest.main()
