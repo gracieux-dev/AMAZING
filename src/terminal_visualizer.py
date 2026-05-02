@@ -65,6 +65,10 @@ _BOX = {
 
 _WALL_CHARS = set(_BOX.values()) | {'─', '│'}
 
+_PAC_OPEN  = {(1, 0): '>', (-1, 0): '<', (0, 1): 'v', (0, -1): '^'}
+_PAC_CLOSED = 'O'
+_PAC_STEPS  = 2   # frames between pac-man steps (~60 ms/cell at 30 ms/frame)
+
 
 # ── module-level drawing helpers ───────────────────────────────────────────────
 
@@ -286,8 +290,27 @@ def _main(stdscr: Any, generator: Any, entry: tuple,
     anim_pos: Optional[tuple] = None
     view_r = 0   # scroll offset in maze char rows
     view_c = 0   # scroll offset in maze char cols
+    pac_anim  = False
+    pac_idx   = 0
+    pac_tick  = 0
+    pac_dir: tuple = (1, 0)
+    pac_trail: set = set()
 
     while True:
+        # ── advance pac-man ──────────────────────────────────────────────
+        if pac_anim and sol_coords:
+            pac_tick += 1
+            if pac_tick % _PAC_STEPS == 0:
+                if pac_idx < len(sol_coords) - 1:
+                    pac_trail.add(tuple(sol_coords[pac_idx]))
+                    prev = sol_coords[pac_idx]
+                    pac_idx += 1
+                    cur = sol_coords[pac_idx]
+                    pac_dir = (cur[0] - prev[0], cur[1] - prev[1])
+                else:
+                    pac_idx = 0
+                    pac_trail = set()
+
         # ── advance animation ────────────────────────────────────────────
         if animating and anim_iter is not None and anim_visited is not None:
             try:
@@ -307,10 +330,20 @@ def _main(stdscr: Any, generator: Any, entry: tuple,
         h, w = stdscr.getmaxyx()
         stdscr.erase()
 
+        gw = len(generator.grid[0]) if generator.grid else 0
+        wide_mode = (2 * (2 * gw + 1) + 34) <= w
+
+        _pac_pos = tuple(sol_coords[pac_idx]) if (show_sol and pac_anim and sol_coords) else None
+        _pac_mouth = (pac_tick // 2) % 2 == 0
         maze_ch = _make_maze_chars(
             generator, entry, exit_pos,
             sol_coords if show_sol else None,
             anim_visited, anim_pos,
+            wide=wide_mode,
+            pac_pos=_pac_pos,
+            pac_dir=pac_dir,
+            pac_mouth=_pac_mouth,
+            pac_trail=pac_trail if pac_anim else None,
         )
         mh_chars = len(maze_ch)
         mw_chars = len(maze_ch[0]) if maze_ch else 0
@@ -335,7 +368,7 @@ def _main(stdscr: Any, generator: Any, entry: tuple,
         stdscr.refresh()
 
         # 30 ms poll keeps animation smooth; -1 blocks until keypress
-        stdscr.timeout(30 if animating else -1)
+        stdscr.timeout(30 if (animating or pac_anim) else -1)
         key = stdscr.getch()
         if key == -1:
             continue
@@ -350,13 +383,25 @@ def _main(stdscr: Any, generator: Any, entry: tuple,
                 anim_iter = generator.generate_steps()
                 sol_coords = None
                 show_sol = False
+                pac_anim = False
+                pac_idx = 0
+                pac_tick = 0
+                pac_trail = set()
                 view_r = 0
                 view_c = 0
         elif key in (ord('s'), ord('S')):
             if not animating:
                 show_sol = not show_sol
-                if show_sol and sol_coords is None:
-                    sol_coords = solver.solve_as_coords(entry, exit_pos)
+                if show_sol:
+                    if sol_coords is None:
+                        sol_coords = solver.solve_as_coords(entry, exit_pos)
+                    pac_anim = True
+                    pac_idx = 0
+                    pac_tick = 0
+                    pac_dir = (1, 0)
+                    pac_trail = set()
+                else:
+                    pac_anim = False
         elif key in (ord('t'), ord('T')):
             t_idx = (t_idx + 1) % len(themes)
             _init_colors(themes[t_idx])
@@ -371,10 +416,9 @@ def _main(stdscr: Any, generator: Any, entry: tuple,
         elif key == curses.KEY_DOWN:
             view_r += 2
         elif key == curses.KEY_LEFT:
-            # step by 2: each maze column spans 2 char columns
-            view_c = max(0, view_c - 2)
+            view_c = max(0, view_c - (4 if wide_mode else 2))
         elif key == curses.KEY_RIGHT:
-            view_c += 2
+            view_c += 4 if wide_mode else 2
 
 
 # ── maze rendering ─────────────────────────────────────────────────────────────
@@ -382,7 +426,12 @@ def _main(stdscr: Any, generator: Any, entry: tuple,
 def _make_maze_chars(generator: Any, entry: tuple, exit_pos: tuple,
                      sol_path: Any,
                      anim_visited: Optional[set] = None,
-                     anim_pos: Optional[tuple] = None) -> list:
+                     anim_pos: Optional[tuple] = None,
+                     wide: bool = False,
+                     pac_pos: Optional[tuple] = None,
+                     pac_dir: tuple = (1, 0),
+                     pac_mouth: bool = True,
+                     pac_trail: Optional[set] = None) -> list:
     """Build a (2H+1) × (2W+1) character grid representing the maze.
 
     Each maze cell maps to a centre character at (2y+1, 2x+1); wall slots sit
@@ -440,8 +489,13 @@ def _make_maze_chars(generator: Any, entry: tuple, exit_pos: tuple,
                 ch[dr][dc] = '◆'
             elif anim_visited is not None and pos not in anim_visited:
                 ch[dr][dc] = '░'
+            elif pac_pos is not None and pos == pac_pos:
+                ch[dr][dc] = _PAC_OPEN.get(pac_dir, '>') if pac_mouth else _PAC_CLOSED
             elif pos in sol_set:
-                ch[dr][dc] = '•'
+                if pac_pos is None:
+                    ch[dr][dc] = '•'
+                elif pac_trail is None or pos not in pac_trail:
+                    ch[dr][dc] = '·'
 
     # convert ASCII walls to Unicode box-drawing
     for r in range(0, dh, 2):
@@ -458,6 +512,17 @@ def _make_maze_chars(generator: Any, entry: tuple, exit_pos: tuple,
         for c in range(0, dw, 2):
             if ch[r][c] == '|':
                 ch[r][c] = '│'
+
+    if wide:
+        _EAST_CONNECT = set('─┌└├┬┴┼╶')
+        doubled = []
+        for r, row in enumerate(ch):
+            new_row = []
+            for char in row:
+                new_row.append(char)
+                new_row.append('─' if (r % 2 == 0 and char in _EAST_CONNECT) else ' ')
+            doubled.append(new_row)
+        return doubled
 
     return ch
 
@@ -495,6 +560,10 @@ def _draw_maze(stdscr: Any, maze_ch: list, term_h: int, max_x: int,
                 attr = curses.color_pair(_C_ANIM_CUR) | curses.A_BOLD
             elif char == '░':
                 attr = curses.color_pair(_C_DIM) | curses.A_DIM
+            elif char in _PAC_OPEN.values() or char == _PAC_CLOSED:
+                attr = curses.color_pair(_C_PATH) | curses.A_BOLD
+            elif char == '·':
+                attr = curses.color_pair(_C_DIM)
             elif char in _WALL_CHARS:
                 attr = curses.color_pair(_C_WALL)
             else:

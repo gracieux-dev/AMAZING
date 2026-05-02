@@ -1,11 +1,11 @@
 # A-Maze-ing configuration file
-WIDTH=12
-HEIGHT=9
+WIDTH=25
+HEIGHT=25
 ENTRY=1,0
-EXIT=6,8
+EXIT=20,21
 OUTPUT_FILE=maze.txt
 PERFECT=True
-SEED=123
+# SEED=123
 
 # Visual theme: spring | summer | autumn | winter
 # Display mode: auto | mlx | terminal | none

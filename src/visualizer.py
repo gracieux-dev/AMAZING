@@ -20,7 +20,7 @@ MLX_THEMES: dict = {
     'spring': {
         'floor': 0xC8DF90, 'floor_alt': 0xB0C870,
         'wall_top': 0x4A9A32, 'wall_face': 0x1E5A14,
-        'path': 0xFF6B35, 'entry': 0x50B8FF,
+        'path': 0xFF1500, 'entry': 0x50B8FF,
         'exit': 0xFF5050, 'special': 0xCC80FF,
         'bg': 0xE8F5D0, 'panel': 0x2A4A2A,
         'text': 0xDDFFDD, 'accent': 0x88FF44,
@@ -28,7 +28,7 @@ MLX_THEMES: dict = {
     'summer': {
         'floor': 0xF0E898, 'floor_alt': 0xD8D070,
         'wall_top': 0x00A8A8, 'wall_face': 0x005A5A,
-        'path': 0x9055CC, 'entry': 0x3CA0FF,
+        'path': 0xFF00CC, 'entry': 0x3CA0FF,
         'exit': 0xFF4646, 'special': 0xC070FF,
         'bg': 0xD8F4F8, 'panel': 0x00363C,
         'text': 0xCCF8FF, 'accent': 0x00DDFF,
@@ -36,7 +36,7 @@ MLX_THEMES: dict = {
     'autumn': {
         'floor': 0xE8C870, 'floor_alt': 0xC8A850,
         'wall_top': 0xD05810, 'wall_face': 0x882808,
-        'path': 0x2BC7C9, 'entry': 0x3CA0FF,
+        'path': 0x0066FF, 'entry': 0x3CA0FF,
         'exit': 0xFF4646, 'special': 0xB464DC,
         'bg': 0xFFF0D0, 'panel': 0x4A1800,
         'text': 0xFFE0C0, 'accent': 0xFF9900,
@@ -44,7 +44,7 @@ MLX_THEMES: dict = {
     'winter': {
         'floor': 0xD8ECFF, 'floor_alt': 0xBCCEF0,
         'wall_top': 0xE8F4FF, 'wall_face': 0x7080A0,
-        'path': 0xFFCC00, 'entry': 0x3CA0FF,
+        'path': 0xFF8800, 'entry': 0x3CA0FF,
         'exit': 0xFF4646, 'special': 0xE080FF,
         'bg': 0xDCECFF, 'panel': 0x18243C,
         'text': 0xCCDDFF, 'accent': 0x88CCFF,
@@ -151,6 +151,12 @@ class MlxMazeVisualizer:
 
         self._in_menu = True
         self._splash = _rnd.choice(_SPLASH_TEXTS)
+        # pac-man animation
+        self._pac_anim  = False
+        self._pac_idx   = 0
+        self._pac_tick  = 0
+        self._pac_dir: tuple = (1, 0)
+        self._pac_trail: set = set()
 
         self._px_cache: dict = {}
         self._bpp8 = 4          # bytes-per-pixel; overwritten in _setup_window
@@ -167,8 +173,11 @@ class MlxMazeVisualizer:
         # query actual screen dimensions via MLX
         try:
             _sw, _sh = self._mlx.mlx_get_screen_size(self._ptr)
+            if _sw <= 0 or _sh <= 0:
+                _sw, _sh = 1920, 1080
         except Exception:
             _sw, _sh = 1920, 1080
+        print(f"[DEBUG] screen={_sw}x{_sh}  grid={gw}x{gh}", flush=True)
         _max_w = max(640, _sw - _PANEL_W - 40)
         _max_h = max(480, _sh - 60)
 
@@ -180,6 +189,7 @@ class MlxMazeVisualizer:
             cell -= 1
             wf = max(2, _WFACE * cell // _CELL)
         wall = max(2, _WALL * cell // _CELL)
+        print(f"[DEBUG] cell={cell}  win={gw * cell + wall + _PANEL_W}x{max(gh * cell + wall + wf + 4, 420)}", flush=True)
 
         self._cell = cell
         self._wf = wf
@@ -313,6 +323,25 @@ class MlxMazeVisualizer:
         for dy in range(-r, r + 1):
             hw = int((r * r - dy * dy) ** 0.5)
             self._hline(cx - hw, cx + hw, cy + dy, color)
+
+    def _draw_pacman(self, cx: int, cy: int, r: int,
+                     direction: tuple, mouth_open: bool) -> None:
+        """Yellow circle with a triangular mouth cut out toward direction."""
+        self._circle(cx, cy, r, 0xFFEE00)
+        if not mouth_open or r < 4:
+            return
+        dx, dy = direction
+        spread = max(1, r // 2)
+        for step in range(1, r + 1):
+            half = int(spread * step / r)
+            if dx == 1:
+                self._rect(cx + step - 1, cy - half, 1, 2 * half, 0x111111)
+            elif dx == -1:
+                self._rect(cx - step, cy - half, 1, 2 * half, 0x111111)
+            elif dy == 1:
+                self._rect(cx - half, cy + step - 1, 2 * half, 1, 0x111111)
+            else:
+                self._rect(cx - half, cy - step, 2 * half, 1, 0x111111)
 
     def _diamond(self, cx: int, cy: int, r: int, color: int) -> None:
         """Filled diamond shape centered at (cx, cy) with radius r."""
@@ -490,6 +519,13 @@ class MlxMazeVisualizer:
         # ── solution path trail (drawn before markers so diamonds are on top) ──
         if sol:
             self._draw_path(sol, cw, c)
+            if self._pac_anim and self._pac_idx < len(sol):
+                pac_pos = tuple(sol[self._pac_idx])
+                half = cw // 2
+                px_, py_ = self._cell_px(*pac_pos)
+                mouth_open = (self._pac_tick // 4) % 2 == 0
+                self._draw_pacman(px_ + half, py_ + half,
+                                  max(3, cw // 2 - 1), self._pac_dir, mouth_open)
 
         # ── entry / exit — clean diamond markers
         for pos, color in [(self.entry, c['entry']), (self.exit, c['exit'])]:
@@ -654,8 +690,17 @@ class MlxMazeVisualizer:
             self._mlx.mlx_loop_exit(self._ptr)
         elif key == 114:       # r — start animated regeneration
             self._start_anim()
-        elif key == 115:       # s — toggle solution
+        elif key == 115:       # s — toggle solution / pac-man
             self.show_solution = not self.show_solution
+            if self.show_solution:
+                self._get_solution()
+                self._pac_anim  = True
+                self._pac_idx   = 0
+                self._pac_tick  = 0
+                self._pac_dir   = (1, 0)
+                self._pac_trail = set()
+            else:
+                self._pac_anim = False
             self._render()
         elif key == 116:       # t — cycle theme
             themes = list(MLX_THEMES)
@@ -670,6 +715,8 @@ class MlxMazeVisualizer:
         self._anim_pos = (0, 0)
         self._sol_dirty = True
         self._step_iter = self.generator.generate_steps()
+        self._pac_anim = False
+        self.show_solution = False
 
     def _anim_frame(self, _: Any) -> int:
         """Advance the generation animation by _STEPS_PER_FRAME steps."""
@@ -691,6 +738,20 @@ class MlxMazeVisualizer:
                 self._step_iter = None
                 self._sol_dirty = True
                 self._p42 = getattr(self.generator, 'locked', set()) or set()
+            self._render()
+        if self._pac_anim and self._sol_cache:
+            self._pac_tick += 1
+            if self._pac_tick % 3 == 0:
+                sol = self._sol_cache
+                if self._pac_idx < len(sol) - 1:
+                    self._pac_trail.add(tuple(sol[self._pac_idx]))
+                    prev = sol[self._pac_idx]
+                    self._pac_idx += 1
+                    cur = sol[self._pac_idx]
+                    self._pac_dir = (cur[0] - prev[0], cur[1] - prev[1])
+                else:
+                    self._pac_idx = 0
+                    self._pac_trail = set()
             self._render()
         return 0
 

@@ -209,15 +209,20 @@ The interactive display uses the MLX library.
 
 ## Team and Project Management
 
-**Team:** gracieux-dev (solo project)
+**Team:** olchacou, ancourt
+
+| Member | Contributions |
+|---|---|
+| olchacou | DFS generation algorithm, bitmask encoding, output writer, MLX visualiser, themes, animated generation, BFS solver, packaging |
+| ancourt | Config file parser, seed parsing and reproducibility, terminal visualiser (curses), lint error corrections (flake8 / mypy) |
 
 **Planning:**
 - Phase 1 — core generation: config parser, DFS algorithm, bitmask encoding, output writer
 - Phase 2 — constraints: "42" pattern locking, perfect/imperfect modes, BFS solver
-- Phase 3 — visualiser: MLX renderer, themes, animated generation
+- Phase 3 — visualiser: MLX renderer, themes, animated generation, terminal fallback
 - Phase 4 — packaging: `pyproject.toml`, pip package, tests, README
 
-**What worked well:** The iterative DFS made animation straightforward via `generate_steps()`. The bitmask encoding maps directly to the hex output format with no translation layer.
+**What worked well:** The iterative DFS made animation straightforward via `generate_steps()`. The bitmask encoding maps directly to the hex output format with no translation layer. The terminal visualiser provides a reliable fallback when MLX is unavailable.
 
 **What could be improved:** The loop-adding strategy for imperfect mazes could be more sophisticated to better control open-area density.
 
