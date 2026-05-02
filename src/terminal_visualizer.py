@@ -194,8 +194,8 @@ def _init_colors(theme: str) -> None:
 
 def run_interactive(
     generator: Any,
-    entry: tuple,
-    exit_pos: tuple,
+    entry: tuple[int, int],
+    exit_pos: tuple[int, int],
     theme: str = 'spring',
 ) -> None:
     """Launch the curses-based interactive visualizer."""
@@ -204,7 +204,7 @@ def run_interactive(
 
 # ── main menu ─────────────────────────────────────────────────────────────────
 
-def _menu_screen(stdscr: Any, themes: list, t_idx: int) -> tuple:
+def _menu_screen(stdscr: Any, themes: list[str], t_idx: int) -> tuple[bool, int]:
     """Minecraft-style main menu. Returns (should_play, t_idx)."""
     splash = _rnd.choice(_SPLASH_TEXTS)
 
@@ -250,8 +250,8 @@ def _menu_screen(stdscr: Any, themes: list, t_idx: int) -> tuple:
 
 # ── main loop ─────────────────────────────────────────────────────────────────
 
-def _main(stdscr: Any, generator: Any, entry: tuple,
-          exit_pos: tuple, theme: str) -> None:
+def _main(stdscr: Any, generator: Any, entry: tuple[int, int],
+          exit_pos: tuple[int, int], theme: str) -> None:
     """Curses entry point called by curses.wrapper from run_interactive.
 
     Parameters:
@@ -282,19 +282,19 @@ def _main(stdscr: Any, generator: Any, entry: tuple,
         return
 
     show_sol = False
-    sol_coords: Optional[list] = None
+    sol_coords: Optional[list[Any]] = None
     solver = MazeSolver(generator)
     animating = False
     anim_iter: Optional[Any] = None
-    anim_visited: Optional[set] = None
-    anim_pos: Optional[tuple] = None
+    anim_visited: Optional[set[Any]] = None
+    anim_pos: Optional[tuple[int, int]] = None
     view_r = 0   # scroll offset in maze char rows
     view_c = 0   # scroll offset in maze char cols
     pac_anim = False
     pac_idx = 0
     pac_tick = 0
-    pac_dir: tuple = (1, 0)
-    pac_trail: set = set()
+    pac_dir: tuple[int, int] = (1, 0)
+    pac_trail: set[Any] = set()
 
     while True:
         # ── advance pac-man ──────────────────────────────────────────────
@@ -333,7 +333,8 @@ def _main(stdscr: Any, generator: Any, entry: tuple,
         gw = len(generator.grid[0]) if generator.grid else 0
         wide_mode = (2 * (2 * gw + 1) + 34) <= w
 
-        _pac_pos = tuple(sol_coords[pac_idx]) if (show_sol and pac_anim and sol_coords) else None
+        _pac_pos = tuple(sol_coords[pac_idx]) if (
+            show_sol and pac_anim and sol_coords) else None
         _pac_mouth = (pac_tick // 2) % 2 == 0
         maze_ch = _make_maze_chars(
             generator, entry, exit_pos,
@@ -423,15 +424,16 @@ def _main(stdscr: Any, generator: Any, entry: tuple,
 
 # ── maze rendering ─────────────────────────────────────────────────────────────
 
-def _make_maze_chars(generator: Any, entry: tuple, exit_pos: tuple,
+def _make_maze_chars(generator: Any, entry: tuple[int, int],
+                     exit_pos: tuple[int, int],
                      sol_path: Any,
-                     anim_visited: Optional[set] = None,
-                     anim_pos: Optional[tuple] = None,
+                     anim_visited: Optional[set[Any]] = None,
+                     anim_pos: Optional[tuple[int, int]] = None,
                      wide: bool = False,
-                     pac_pos: Optional[tuple] = None,
-                     pac_dir: tuple = (1, 0),
+                     pac_pos: Optional[tuple[int, int]] = None,
+                     pac_dir: tuple[int, int] = (1, 0),
                      pac_mouth: bool = True,
-                     pac_trail: Optional[set] = None) -> list:
+                     pac_trail: Optional[set[Any]] = None) -> list[list[str]]:
     """Build a (2H+1) × (2W+1) character grid representing the maze.
 
     Each maze cell maps to a centre character at (2y+1, 2x+1); wall slots sit
@@ -455,11 +457,11 @@ def _make_maze_chars(generator: Any, entry: tuple, exit_pos: tuple,
     height = len(grid)
     width = len(grid[0]) if height else 0
     sol_set = set(map(tuple, sol_path)) if sol_path else set()
-    locked: set = getattr(generator, 'locked', set()) or set()
+    locked: set[Any] = getattr(generator, 'locked', set()) or set()
 
     dh = 2 * height + 1
     dw = 2 * width + 1
-    ch = [[' '] * dw for _ in range(dh)]
+    ch: list[list[str]] = [[' '] * dw for _ in range(dh)]
 
     for r in range(0, dh, 2):
         for c in range(0, dw, 2):
@@ -490,7 +492,8 @@ def _make_maze_chars(generator: Any, entry: tuple, exit_pos: tuple,
             elif anim_visited is not None and pos not in anim_visited:
                 ch[dr][dc] = '░'
             elif pac_pos is not None and pos == pac_pos:
-                ch[dr][dc] = _PAC_OPEN.get(pac_dir, '>') if pac_mouth else _PAC_CLOSED
+                ch[dr][dc] = _PAC_OPEN.get(
+                    pac_dir, '>') if pac_mouth else _PAC_CLOSED
             elif pos in sol_set:
                 if pac_pos is None:
                     ch[dr][dc] = '•'
@@ -520,14 +523,15 @@ def _make_maze_chars(generator: Any, entry: tuple, exit_pos: tuple,
             new_row = []
             for char in row:
                 new_row.append(char)
-                new_row.append('─' if (r % 2 == 0 and char in _EAST_CONNECT) else ' ')
+                new_row.append(
+                    '─' if (r % 2 == 0 and char in _EAST_CONNECT) else ' ')
             doubled.append(new_row)
         return doubled
 
     return ch
 
 
-def _draw_maze(stdscr: Any, maze_ch: list, term_h: int, max_x: int,
+def _draw_maze(stdscr: Any, maze_ch: list[list[str]], term_h: int, max_x: int,
                off_r: int = 0, off_c: int = 0) -> None:
     """Render the maze character grid onto stdscr with curses colour attributes.
 
@@ -577,7 +581,7 @@ def _draw_maze(stdscr: Any, maze_ch: list, term_h: int, max_x: int,
 # ── panel rendering ────────────────────────────────────────────────────────────
 
 def _draw_panel(stdscr: Any, px: int, pw: int, ph: int,
-                generator: Any, show_sol: bool, sol_coords: Optional[list],
+                generator: Any, show_sol: bool, sol_coords: Optional[list[Any]],
                 theme: str, animating: bool, scrollable: bool = False) -> None:
     """Render the right-hand info/control panel on stdscr.
 
@@ -612,9 +616,11 @@ def _draw_panel(stdscr: Any, px: int, pw: int, ph: int,
     y += 2
 
     if animating:
-        _panel_mc_btn(stdscr, y, '[R]  Generating...', _C_GO, px, pw, ph, bold=True)
+        _panel_mc_btn(stdscr, y, '[R]  Generating...',
+                      _C_GO, px, pw, ph, bold=True)
     else:
-        _panel_mc_btn(stdscr, y, '[R]  Regenerate', _C_GO, px, pw, ph, bold=True)
+        _panel_mc_btn(stdscr, y, '[R]  Regenerate',
+                      _C_GO, px, pw, ph, bold=True)
     y += 2
 
     if animating:
@@ -626,7 +632,8 @@ def _draw_panel(stdscr: Any, px: int, pw: int, ph: int,
         _panel_mc_btn(stdscr, y, '[S]  Solution: OFF', _C_NRM, px, pw, ph)
     y += 2
 
-    _panel_mc_btn(stdscr, y, f'[T]  Theme: {theme.capitalize()}', _C_NRM, px, pw, ph)
+    _panel_mc_btn(
+        stdscr, y, f'[T]  Theme: {theme.capitalize()}', _C_NRM, px, pw, ph)
     y += 2
     _panel_mc_btn(stdscr, y, '[Enter]  Save & Quit', _C_NRM, px, pw, ph)
     y += 2
@@ -637,10 +644,12 @@ def _draw_panel(stdscr: Any, px: int, pw: int, ph: int,
     y += 1
     _panel_put(stdscr, y, 'X  Exit', px, pw, ph, curses.color_pair(_C_EXIT))
     y += 1
-    _panel_put(stdscr, y, '▓  Pattern42', px, pw, ph, curses.color_pair(_C_P42))
+    _panel_put(stdscr, y, '▓  Pattern42', px,
+               pw, ph, curses.color_pair(_C_P42))
     y += 1
     if show_sol and not animating:
-        _panel_put(stdscr, y, '•  Solution', px, pw, ph, curses.color_pair(_C_PATH))
+        _panel_put(stdscr, y, '•  Solution', px, pw,
+                   ph, curses.color_pair(_C_PATH))
         y += 1
 
     if scrollable:

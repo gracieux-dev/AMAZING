@@ -6,7 +6,7 @@ MLX Visualizer — A-Maze-ing
 import os
 import sys
 import random as _rnd
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from mazegen.generator import NORTH, WEST
 
@@ -16,7 +16,7 @@ _WALL = 4    # wall thickness
 _WFACE = 8   # wall front-face height (depth illusion)
 
 # ── colour palettes ────────────────────────────────────────────────────────────
-MLX_THEMES: dict = {
+MLX_THEMES: dict[str, dict[str, int]] = {
     'spring': {
         'floor': 0xC8DF90, 'floor_alt': 0xB0C870,
         'wall_top': 0x4A9A32, 'wall_face': 0x1E5A14,
@@ -89,8 +89,8 @@ except ModuleNotFoundError:
 
 def run_interactive(
     generator: Any,
-    entry: Tuple[int, int],
-    exit_pos: Tuple[int, int],
+    entry: tuple[int, int],
+    exit_pos: tuple[int, int],
     theme: str = 'spring',
     display_mode: str = 'auto',
 ) -> None:
@@ -138,15 +138,15 @@ class MlxMazeVisualizer:
         self.entry = entry
         self.exit = exit_pos
         self.theme = theme if theme in MLX_THEMES else 'spring'
-        self.show_solution = False
-        self._sol_cache: list = []
-        self._sol_dirty = True
-        self._p42: set = getattr(generator, 'locked', set()) or set()
+        self.show_solution: bool = False
+        self._sol_cache: list[Any] = []
+        self._sol_dirty: bool = True
+        self._p42: set[Any] = getattr(generator, 'locked', set()) or set()
         self._tick = 0
         # animation state
         self._animating = False
-        self._anim_visited: Optional[set] = None
-        self._anim_pos: Optional[tuple] = None
+        self._anim_visited: Optional[set[Any]] = None
+        self._anim_pos: Optional[tuple[int, int]] = None
         self._step_iter: Optional[Any] = None
 
         self._in_menu = True
@@ -155,10 +155,10 @@ class MlxMazeVisualizer:
         self._pac_anim = False
         self._pac_idx = 0
         self._pac_tick = 0
-        self._pac_dir: tuple = (1, 0)
-        self._pac_trail: set = set()
+        self._pac_dir: tuple[int, int] = (1, 0)
+        self._pac_trail: set[Any] = set()
 
-        self._px_cache: dict = {}
+        self._px_cache: dict[Any, Any] = {}
         self._bpp8 = 4          # bytes-per-pixel; overwritten in _setup_window
         self._mlx = _MlxLib()
         self._ptr = self._mlx.mlx_init()
@@ -202,8 +202,10 @@ class MlxMazeVisualizer:
 
         self._win = self._mlx.mlx_new_window(
             self._ptr, self._win_w, self._win_h, 'A-Maze-ing')
-        self._img = self._mlx.mlx_new_image(self._ptr, self._win_w, self._win_h)
-        self._data, self._bpp, self._sl, _ = self._mlx.mlx_get_data_addr(self._img)
+        self._img = self._mlx.mlx_new_image(
+            self._ptr, self._win_w, self._win_h)
+        self._data, self._bpp, self._sl, _ = self._mlx.mlx_get_data_addr(
+            self._img)
         self._bpp8 = self._bpp // 8
 
     # ── main menu ──────────────────────────────────────────────────────────────
@@ -255,7 +257,8 @@ class MlxMazeVisualizer:
             self._rect(bx_ + 2, by_ + bh - 4, bw - 4, 2, sh)
 
         # flush image (shows tiles, panel bg, button shapes)
-        self._mlx.mlx_put_image_to_window(self._ptr, self._win, self._img, 0, 0)
+        self._mlx.mlx_put_image_to_window(
+            self._ptr, self._win, self._img, 0, 0)
 
         # text drawn directly to window via mlx_string_put
         title = 'A - M A Z E - I N G'
@@ -278,7 +281,8 @@ class MlxMazeVisualizer:
         """Return cached 4-byte pixel for color."""
         p = self._px_cache.get(color)
         if p is None:
-            p = bytes([color & 0xFF, (color >> 8) & 0xFF, (color >> 16) & 0xFF, 0xFF])
+            p = bytes([color & 0xFF, (color >> 8) &
+                      0xFF, (color >> 16) & 0xFF, 0xFF])
             self._px_cache[color] = p
         return p
 
@@ -326,7 +330,7 @@ class MlxMazeVisualizer:
             self._hline(cx - hw, cx + hw, cy + dy, color)
 
     def _draw_pacman(self, cx: int, cy: int, r: int,
-                     direction: tuple, mouth_open: bool) -> None:
+                     direction: tuple[int, int], mouth_open: bool) -> None:
         """Yellow circle with a triangular mouth cut out toward direction."""
         self._circle(cx, cy, r, 0xFFEE00)
         if not mouth_open or r < 4:
@@ -393,19 +397,22 @@ class MlxMazeVisualizer:
         c = self._col()
         # top face with highlight on top edge
         self._rect(px, py, length, self._wall, c['wall_top'])
-        self._hline(px, px + length - 1, py, self._blend(c['wall_top'], 0xFFFFFF, 0.35))
+        self._hline(px, px + length - 1, py,
+                    self._blend(c['wall_top'], 0xFFFFFF, 0.35))
         # front face with horizontal score line (stone layer seam)
         self._rect(px, py + self._wall, length, self._wf, c['wall_face'])
         if self._wf >= 4:
             score = self._dim(c['wall_face'], 0.55)
-            self._hline(px, px + length - 1, py + self._wall + self._wf // 2, score)
+            self._hline(px, px + length - 1, py +
+                        self._wall + self._wf // 2, score)
 
     def _wall_v(self, px: int, py: int, length: int) -> None:
         """Vertical wall: beveled top face + stone-scored front face."""
         c = self._col()
         # top face with highlight on left edge
         self._rect(px, py, self._wall, length, c['wall_top'])
-        self._rect(px, py, 1, length, self._blend(c['wall_top'], 0xFFFFFF, 0.35))
+        self._rect(px, py, 1, length, self._blend(
+            c['wall_top'], 0xFFFFFF, 0.35))
         # front face with regular horizontal score lines
         self._rect(px + self._wall, py, self._wf, length, c['wall_face'])
         if self._wf >= 4:
@@ -417,7 +424,7 @@ class MlxMazeVisualizer:
 
     # ── path trail ────────────────────────────────────────────────────────────
 
-    def _draw_path(self, sol: list, cw: int, c: dict) -> None:
+    def _draw_path(self, sol: list[Any], cw: int, c: dict[str, int]) -> None:
         """Draw solution as a thick connected trail with node circles at each cell."""
         if not sol:
             return
@@ -458,7 +465,7 @@ class MlxMazeVisualizer:
         """Return the colour palette for the current theme."""
         return MLX_THEMES.get(self.theme, MLX_THEMES['spring'])
 
-    def _get_solution(self) -> list:
+    def _get_solution(self) -> list[Any]:
         """Return cached solution coords, recomputing if dirty."""
         if self._sol_dirty:
             from mazegen.solver import MazeSolver
@@ -469,7 +476,7 @@ class MlxMazeVisualizer:
 
     # ── render ─────────────────────────────────────────────────────────────────
 
-    def _cell_px(self, x: int, y: int) -> Tuple[int, int]:
+    def _cell_px(self, x: int, y: int) -> tuple[int, int]:
         """Return the pixel coordinates of the top-left corner of cell (x, y)."""
         w = self._wall
         c = self._cell
@@ -534,7 +541,8 @@ class MlxMazeVisualizer:
             cx, cy = px + cw // 2, py + cw // 2
             self._diamond(cx, cy, max(3, cw // 2 - 1), self._dim(color, 0.35))
             self._diamond(cx, cy, max(2, cw // 3), color)
-            self._circle(cx, cy, max(1, cw // 8), self._blend(color, 0xFFFFFF, 0.6))
+            self._circle(cx, cy, max(1, cw // 8),
+                         self._blend(color, 0xFFFFFF, 0.6))
 
         # ── walls
         for y in range(gh):
@@ -560,7 +568,8 @@ class MlxMazeVisualizer:
 
         self._mlx.mlx_clear_window(self._ptr, self._win)
         # ── flush to window, then draw panel text on top
-        self._mlx.mlx_put_image_to_window(self._ptr, self._win, self._img, 0, 0)
+        self._mlx.mlx_put_image_to_window(
+            self._ptr, self._win, self._img, 0, 0)
         self._draw_panel(gw, gh, sol, c)
 
     def _mc_text(self, x: int, y: int, text: str,
@@ -581,7 +590,8 @@ class MlxMazeVisualizer:
         tx = bx + max(4, (bw - len(label) * 8) // 2)
         self._mc_text(tx, y + (bh - 8) // 2, label)
 
-    def _draw_panel(self, gw: int, gh: int, sol: list, c: dict) -> None:
+    def _draw_panel(self, gw: int, gh: int, sol: list[Any],
+                    c: dict[str, int]) -> None:
         """Render the right-hand info and control panel."""
         px = self._mw
         pw = _PANEL_W
@@ -679,7 +689,8 @@ class MlxMazeVisualizer:
                 self._render()
             elif key == 116:    # t — cycle theme in menu
                 themes = list(MLX_THEMES)
-                self.theme = themes[(themes.index(self.theme) + 1) % len(themes)]
+                self.theme = themes[(themes.index(
+                    self.theme) + 1) % len(themes)]
                 self._render_menu()
             return 0
 

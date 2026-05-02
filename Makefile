@@ -19,13 +19,13 @@ clean:
 	rm -rf dist/ build/ *.egg-info/ 2>/dev/null || true
 
 lint:
-	flake8 . --max-line-length=99 --exclude=dist,build
+	flake8 . --max-line-length=99 --exclude=dist,build,.venv
 	$(PYTHON) -m mypy . --warn-return-any --warn-unused-ignores \
 	        --ignore-missing-imports --disallow-untyped-defs \
 	        --check-untyped-defs
 
 lint-strict:
-	flake8 . --max-line-length=99 --exclude=dist,build
+	flake8 . --max-line-length=99 --exclude=dist,build,.venv
 	$(PYTHON) -m mypy . --strict --ignore-missing-imports
 build-package:
 	$(PYTHON) -m build
