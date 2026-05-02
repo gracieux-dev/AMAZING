@@ -7,7 +7,7 @@ name = "mazegen"
 version = "1.0.0"
 description = "Générateur de labyrinthes Python réutilisable"
 authors = [
-    {name = "Equipe 42", email = "equipe@42.fr"}
+    {name = "olchacou, ancourt"}
 ]
 dependencies = [
     "typing-extensions>=4.0.0"
@@ -25,14 +25,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 
-[project.urls]
-Homepage = "https://github.com/42/a-maze-ing"
-Repository = "https://github.com/42/a-maze-ing.git"
-Issues = "https://github.com/42/a-maze-ing/issues"
-
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["mazegen", "mazegen.*", "src", "src.*"]
+include = ["mazegen", "mazegen.*"]
 
 [tool.mypy]
 python_version = "3.10"
@@ -50,6 +45,6 @@ warn_unreachable = true
 strict_equality = true
 
 [tool.flake8]
-max-line-length = 88
+max-line-length = 99
 extend-ignore = ["E203", "W503"]
 exclude = [".git", "__pycache__", "build", "dist"]

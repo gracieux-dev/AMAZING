@@ -1,8 +1,8 @@
 # A-Maze-ing configuration file
-WIDTH=25
-HEIGHT=25
+WIDTH=20
+HEIGHT=20
 ENTRY=1,0
-EXIT=20,21
+EXIT=19,17
 OUTPUT_FILE=maze.txt
 PERFECT=True
 # SEED=123
@@ -10,6 +10,6 @@ PERFECT=True
 # Visual theme: spring | summer | autumn | winter
 # Display mode: auto | mlx | terminal | none
 # Use terminal if MLX is slow or unstable.
-DISPLAYMODE=terminal
+DISPLAYMODE=mlx
 THEME=spring
 ALGORITHM=dfs

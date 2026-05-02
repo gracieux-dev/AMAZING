@@ -213,8 +213,8 @@ The interactive display uses the MLX library.
 
 | Member | Contributions |
 |---|---|
-| olchacou | DFS generation algorithm, bitmask encoding, output writer, MLX visualiser, themes, animated generation, BFS solver, packaging |
-| ancourt | Config file parser, seed parsing and reproducibility, terminal visualiser (curses), lint error corrections (flake8 / mypy) |
+| olchacou | DFS generation algorithm, bitmask encoding, output writer, MLX visualiser, themes, animated generation, BFS solver |
+| ancourt | Config file parser, seed parsing and reproducibility, terminal visualiser (curses), lint error corrections (flake8 / mypy), "42" pattern, packaging |
 
 **Planning:**
 - Phase 1 — core generation: config parser, DFS algorithm, bitmask encoding, output writer
@@ -239,7 +239,6 @@ The interactive display uses the MLX library.
 
 **AI usage (Claude — Anthropic):**
 - Helped identify the missing entry/exit vs. "42" pattern validation.
-- Suggested the `generate_steps()` generator pattern for step-by-step animation.
 - Reviewed flake8/mypy diagnostics and proposed fixes.
 - Drafted and reviewed docstrings following PEP 257.
 
