@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mazegen"
 version = "1.0.0"
-description = "Générateur de labyrinthes Python réutilisable"
+description = "Reusable Python maze generator"
 authors = [
     {name = "olchacou, ancourt"}
 ]
