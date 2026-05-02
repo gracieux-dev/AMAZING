@@ -65,9 +65,9 @@ _BOX = {
 
 _WALL_CHARS = set(_BOX.values()) | {'─', '│'}
 
-_PAC_OPEN  = {(1, 0): '>', (-1, 0): '<', (0, 1): 'v', (0, -1): '^'}
+_PAC_OPEN = {(1, 0): '>', (-1, 0): '<', (0, 1): 'v', (0, -1): '^'}
 _PAC_CLOSED = 'O'
-_PAC_STEPS  = 2   # frames between pac-man steps (~60 ms/cell at 30 ms/frame)
+_PAC_STEPS = 2   # frames between pac-man steps (~60 ms/cell at 30 ms/frame)
 
 
 # ── module-level drawing helpers ───────────────────────────────────────────────
@@ -290,9 +290,9 @@ def _main(stdscr: Any, generator: Any, entry: tuple,
     anim_pos: Optional[tuple] = None
     view_r = 0   # scroll offset in maze char rows
     view_c = 0   # scroll offset in maze char cols
-    pac_anim  = False
-    pac_idx   = 0
-    pac_tick  = 0
+    pac_anim = False
+    pac_idx = 0
+    pac_tick = 0
     pac_dir: tuple = (1, 0)
     pac_trail: set = set()
 
@@ -455,7 +455,7 @@ def _make_maze_chars(generator: Any, entry: tuple, exit_pos: tuple,
     height = len(grid)
     width = len(grid[0]) if height else 0
     sol_set = set(map(tuple, sol_path)) if sol_path else set()
-    locked = getattr(generator, 'locked', set()) or set()
+    locked: set = getattr(generator, 'locked', set()) or set()
 
     dh = 2 * height + 1
     dw = 2 * width + 1

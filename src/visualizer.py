@@ -141,7 +141,7 @@ class MlxMazeVisualizer:
         self.show_solution = False
         self._sol_cache: list = []
         self._sol_dirty = True
-        self._p42 = getattr(generator, 'locked', set()) or set()
+        self._p42: set = getattr(generator, 'locked', set()) or set()
         self._tick = 0
         # animation state
         self._animating = False
@@ -152,9 +152,9 @@ class MlxMazeVisualizer:
         self._in_menu = True
         self._splash = _rnd.choice(_SPLASH_TEXTS)
         # pac-man animation
-        self._pac_anim  = False
-        self._pac_idx   = 0
-        self._pac_tick  = 0
+        self._pac_anim = False
+        self._pac_idx = 0
+        self._pac_tick = 0
         self._pac_dir: tuple = (1, 0)
         self._pac_trail: set = set()
 
@@ -189,8 +189,9 @@ class MlxMazeVisualizer:
             cell -= 1
             wf = max(2, _WFACE * cell // _CELL)
         wall = max(2, _WALL * cell // _CELL)
-        print(f"[DEBUG] cell={cell}  win={gw * cell + wall + _PANEL_W}x{max(gh * cell + wall + wf + 4, 420)}", flush=True)
 
+        print(f"[DEBUG] cell={cell}  win={gw * cell + wall + _PANEL_W}"
+              f"x{max(gh * cell + wall + wf + 4, 420)}", flush=True)
         self._cell = cell
         self._wf = wf
         self._wall = wall
@@ -694,10 +695,10 @@ class MlxMazeVisualizer:
             self.show_solution = not self.show_solution
             if self.show_solution:
                 self._get_solution()
-                self._pac_anim  = True
-                self._pac_idx   = 0
-                self._pac_tick  = 0
-                self._pac_dir   = (1, 0)
+                self._pac_anim = True
+                self._pac_idx = 0
+                self._pac_tick = 0
+                self._pac_dir = (1, 0)
                 self._pac_trail = set()
             else:
                 self._pac_anim = False
