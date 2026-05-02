@@ -10,6 +10,6 @@ PERFECT=True
 # Visual theme: spring | summer | autumn | winter
 # Display mode: auto | mlx | terminal | none
 # Use terminal if MLX is slow or unstable.
-DISPLAYMODE=mlx
-THEME=spring
-ALGORITHM=dfs
+DISPLAYMODE=terminal
+# THEME=spring
+# ALGORITHM=dfs

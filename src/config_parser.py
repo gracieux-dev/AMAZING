@@ -70,13 +70,21 @@ def parse_config(filepath: str) -> dict[str, Any]:
 
     required_keys = [
         'WIDTH', 'HEIGHT', 'ENTRY', 'EXIT', 'OUTPUT_FILE',
-        'PERFECT', 'THEME', 'ALGORITHM',
+        'PERFECT',
     ]
     missing = [key for key in required_keys if key not in config]
     if missing:
         raise ValueError(
             f"Missing configuration key(s): {', '.join(missing)}"
         )
+
+    # Set defaults for optional keys
+    if 'THEME' not in config:
+        config['THEME'] = 'spring'
+    if 'ALGORITHM' not in config:
+        config['ALGORITHM'] = 'dfs'
+    if 'DISPLAYMODE' not in config:
+        config['DISPLAYMODE'] = 'terminal'
 
     # Validation
     _validate_config(config)
@@ -122,6 +130,18 @@ def _validate_config(config: dict[str, Any]) -> None:
             raise ValueError(
                 "DISPLAYMODE must be one of: auto, mlx, terminal, none"
             )
+
+    theme = config['THEME']
+    if theme not in ('spring', 'summer', 'autumn', 'winter'):
+        raise ValueError(
+            "THEME must be one of: spring, summer, autumn, winter"
+        )
+
+    algorithm = config['ALGORITHM']
+    if algorithm not in ('dfs', 'kruskal'):
+        raise ValueError(
+            "ALGORITHM must be one of: dfs, kruskal"
+        )
 
 
 def _is_valid_position(pos: tuple[int, int], width: int, height: int) -> bool:
