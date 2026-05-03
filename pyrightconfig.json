@@ -1,5 +1,0 @@
-{
-    "pythonVersion": "3.11",
-    "include": ["src", "mazegen", "a_maze_ing.py"],
-    "extraPaths": ["."]
-}
